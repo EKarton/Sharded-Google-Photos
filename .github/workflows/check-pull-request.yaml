@@ -38,18 +38,20 @@ jobs:
     name: Run the app
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout branch
-        uses: actions/checkout@v2
-
-      - name: Setup Python
+      - name: Checkout the branch
+        uses: actions/checkout@v3
+      
+      - name: Install Poetry
+        run: pipx install poetry
+      
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: 3.12
+          cache: "poetry"
 
       - name: Install dependencies
-        run: |
-          pip3 install poetry
-          poetry install
+        run: poetry install
 
       - name: Run the app with sample input
         run: |
