@@ -387,10 +387,36 @@ class GPhotosClientTests(unittest.TestCase):
     def test_upload_photo_5xx_returns_nothing(self):
         pass
 
-    def test_search_for_media_items_2xx_returns_nothing(self):
-        pass
+    def test_search_for_media_items_2xx_returns_media_items(self):
+        media_items = [
+            {
+                "id": "1",
+                "productUrl": "http://google.com/photos/2011/1",
+                "baseUrl": "http://google.com/photos/2011/1",
+                "mimeType": "jpeg",
+                "filename": "dog.jpeg",
+            },
+            {
+                "id": "2",
+                "productUrl": "http://google.com/photos/2011/2",
+                "baseUrl": "http://google.com/photos/2011/2",
+                "mimeType": "jpeg",
+                "filename": "cat.jpeg",
+            },
+        ]
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient(creds_file_path, "123.json")
+            request_mocker.post(
+                "https://photoslibrary.googleapis.com/v1/mediaItems:search",
+                json={"mediaItems": media_items},
+            )
 
-    def test_search_for_media_items_5xx_returns_nothing(self):
+            client.authenticate()
+            response = client.search_for_media_items(album_id="123")
+
+            self.assertEqual(response, media_items)
+
+    def test_search_for_media_items_5xx_throws_exception(self):
         pass
 
     def test_update_album_with_new_title_2xx_returns_nothing(self):
