@@ -1,0 +1,58 @@
+##################################################################
+# A Github action used to check pull requests
+# More info at https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
+##################################################################
+
+name: Check the pull request automatically
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  run-tests:
+    name: Runs all tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the branch
+        uses: actions/checkout@v3
+      
+      - name: Install Poetry
+        run: pipx install poetry
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          cache: "poetry"
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run all test cases and run code coverage
+        run: |
+          poetry run coverage run -m pytest && poetry run coverage report -m
+
+  run-app:
+    name: Run the app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the branch
+        uses: actions/checkout@v3
+      
+      - name: Install Poetry
+        run: pipx install poetry
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          cache: "poetry"
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run the app with sample input
+        run: |
+          poetry run python sharded_google_photos/main.py
