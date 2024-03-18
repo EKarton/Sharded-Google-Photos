@@ -15,13 +15,13 @@ poetry install
 3. Run the app in CLI mode by running:
 
 ```
-poetry run python src/main.py
+poetry run python sharded_google_photos/main.py
 ```
 
 4. To lint your code, run:
 
 ```
-poetry run flake8 && poetry run black src/
+poetry run flake8 && poetry run black sharded_google_photos/
 ```
 
 5. To run tests and code coverage, run:
