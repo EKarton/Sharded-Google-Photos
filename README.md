@@ -21,5 +21,11 @@ poetry run python src/main.py
 4. To lint your code, run:
 
 ```
+poetry run flake8 && poetry run black src/
+```
 
+5. To run tests and code coverage, run:
+
+```
+poetry run coverage run -m pytest && poetry run coverage report -m
 ```
