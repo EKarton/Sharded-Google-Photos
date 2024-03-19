@@ -512,33 +512,71 @@ class FakeGPhotosClientTests(unittest.TestCase):
             client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
 
     def test_search_for_media_items__no_photos__returns_nothing(self):
-        pass
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
+        client.authenticate()
+
+        results = client.search_for_media_items()
+
+        self.assertEqual(len(results), 0)
 
     def test_search_for_media_items__photos_on_other_account__returns_correct_values(
         self,
     ):
-        pass
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-    def test_search_for_media_items__on_album_with_photo__returns_photo(self):
-        pass
+        search_results_1 = client_1.search_for_media_items()
+        search_results_2 = client_2.search_for_media_items()
 
-    def test_search_for_media_items__photo_on_existing_album__on_different_album__returns_nothing(
+        self.assertEqual(len(search_results_1), 1)
+        self.assertEqual(search_results_1[0]["id"], new_media_item_id)
+        self.assertEqual(len(search_results_2), 0)
+
+    def test_search_for_media_items__photo_on_existing_album__returns_photos(
         self,
     ):
-        pass
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-    def test_search_for_media_items__photo_on_existing_shared_album__on_different_shared_album__returns_nothing(
+        search_results_1 = client_1.search_for_media_items(album_1["id"])
+
+        self.assertEqual(len(search_results_1), 1)
+        self.assertEqual(search_results_1[0]["id"], new_media_item_id)
+
+    def test_search_for_media_items__photo_on_existing_shared_album__returns_photos_on_both_accounts(
         self,
     ):
-        pass
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-    def test_search_for_media_items__on_shared_album_with_photo__returns_photo(self):
-        pass
+        search_results_1 = client_1.search_for_media_items(album_1["id"])
+        search_results_2 = client_2.search_for_media_items(album_1["id"])
 
-    def test_search_for_media_items__on_shared_album_with_photo_on_different_account__returns_photo(
-        self,
-    ):
-        pass
+        self.assertEqual(len(search_results_1), 1)
+        self.assertEqual(search_results_1[0]["id"], new_media_item_id)
+        self.assertEqual(len(search_results_2), 1)
+        self.assertEqual(search_results_2[0]["id"], new_media_item_id)
 
     def test_search_for_media_items__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
