@@ -25,6 +25,8 @@ class FakeItemsRepository:
             )
             return is_shared and is_accessible
 
+        print(self.__album_id_to_accessible_client_ids)
+
         return list(filter(is_allowed, self.__album_id_to_album.values()))
 
     def list_unshared_albums(self, client_id):
@@ -65,7 +67,7 @@ class FakeItemsRepository:
         self, client_id, album_id, is_collaborative=False, is_commentable=False
     ):
         if client_id not in self.__album_id_to_accessible_client_ids[album_id]:
-            raise Exception("Cannot share album that it does not own")
+            raise Exception("Cannot share album that it cannot have access to")
 
         share_token = str(uuid.uuid4())
         share_info = {
@@ -92,7 +94,7 @@ class FakeItemsRepository:
         if client_id not in self.__album_id_to_accessible_client_ids[album_id]:
             raise Exception("Cannot unshare album that it does not own")
 
-        self.__album_id_to_accessible_client_ids[album_id] = set()
+        self.__album_id_to_accessible_client_ids[album_id] = set([client_id])
         self.__album_id_to_album[album_id]["shareInfo"] = None
 
     def add_photos_to_album(self, client_id, album_id, media_item_ids):
@@ -216,10 +218,10 @@ class FakeItemsRepository:
 
 
 class FakeGPhotosClient(GPhotosClient):
-    def __init__(self, repository: FakeItemsRepository, id=uuid.uuid4()):
+    def __init__(self, repository: FakeItemsRepository, id=None):
         self.is_authenticated = False
         self.repository = repository
-        self.id = id
+        self.id = str(uuid.uuid4()) if id is None else id
 
     def authenticate(self):
         self.is_authenticated = True
