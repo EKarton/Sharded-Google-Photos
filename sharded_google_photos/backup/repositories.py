@@ -48,7 +48,7 @@ class SharedAlbumRepository:
 
     def rename_album(self, album_id, new_title):
         old_album = self.album_id_to_album[album_id]
-        old_title = old_album['title']
+        old_title = old_album["title"]
         client_idx = old_album["client_idx"]
 
         new_album = self.gphoto_clients[client_idx].update_album(album_id, new_title)

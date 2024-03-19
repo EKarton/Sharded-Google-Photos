@@ -101,11 +101,15 @@ class GPhotosBackup:
 
             # Rename the album if it's currently empty
             if media_item_repository.get_num_media_items() == 0:
-                new_album_name = f'To delete/{album['title']}'
-                new_album = shared_album_repository.rename_album(album['id'], new_album_name)
+                new_album_name = f"To delete/{album['title']}"
+                new_album = shared_album_repository.rename_album(
+                    album["id"], new_album_name
+                )
                 logger.debug(f"Step 9: Renamed empty album to be deleted")
 
-                self.gphoto_clients[new_album['client_idx']].unshare_album(new_album['id'])
+                self.gphoto_clients[new_album["client_idx"]].unshare_album(
+                    new_album["id"]
+                )
                 logger.debug(f"Step 10: Unshared empty album")
 
         return shared_album_uris
@@ -144,7 +148,9 @@ class GPhotosBackup:
             max_limit = int(storage_quota["limit"])
             usage = int(storage_quota["usage"])
             remaining_space = max_limit - usage
-            logger.debug(f"Remaining space for {remaining_space} {client_idx} {storage_quota}")
+            logger.debug(
+                f"Remaining space for {remaining_space} {client_idx} {storage_quota}"
+            )
 
             if new_storage_needed > remaining_space:
                 continue
