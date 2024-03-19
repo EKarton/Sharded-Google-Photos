@@ -149,6 +149,52 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(items_in_shared_albums_1), 3)
             self.assertEqual(len(items_in_shared_albums_2), 3)
 
+    def test_backup__new_photos_in_new_album_with_no_more_space__throws_error(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repository=repo, max_num_photos=3)
+        client_1.authenticate()
+        backup_client = GPhotosBackup([client_1])
+
+        with patch("os.stat") as os_stat:
+            os_stat.return_value.st_size = 1
+            backup_client.backup(
+                [
+                    {
+                        "modifier": "+",
+                        "path": "./Photos/2011/Trip to Chicago/20110902_075900.jpeg",
+                    },
+                    {
+                        "modifier": "+",
+                        "path": "./Photos/2011/Trip to Chicago/20110902_190900.jpeg",
+                    },
+                    {
+                        "modifier": "+",
+                        "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
+                    },
+                ]
+            )
+
+            # Act: Put in three more photos in a new album
+            diffs = [
+                {
+                    "modifier": "+",
+                    "path": "./Photos/2011/At Toronto/20110720_213057.jpg",
+                },
+                {
+                    "modifier": "+",
+                    "path": "./Photos/2011/At Toronto/20110720_213146.jpg",
+                },
+                {
+                    "modifier": "+",
+                    "path": "./Photos/2011/At Toronto/20110720_213147.jpg",
+                },
+            ]
+
+            with self.assertRaises(Exception):
+                backup_client.backup(diffs)
+
     def test_backup__create_multiple_albums_at_once__creates_albums_correctly(
         self,
     ):
