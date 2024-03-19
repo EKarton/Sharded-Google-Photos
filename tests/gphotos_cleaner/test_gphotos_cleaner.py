@@ -2,11 +2,13 @@ import unittest
 
 from sharded_google_photos.cleanup.gphotos_cleaner import GPhotosCleaner
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
+from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
 
 
 class GPhotosClientTests(unittest.TestCase):
     def setup_method(self, test_method):
-        self.client_1 = FakeGPhotosClient()
+        self.repository = FakeItemsRepository()
+        self.client_1 = FakeGPhotosClient(repository=self.repository)
         self.client_1.authenticate()
 
     def test_mark_unalbumed_photos_to_trash_photos_in_shared_album_puts_non_shared_photos_to_trash(
