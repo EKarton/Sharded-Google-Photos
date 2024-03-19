@@ -1,0 +1,163 @@
+import uuid
+
+from sharded_google_photos.shared.gphotos_client import GPhotosClient
+
+
+class FakeGPhotosClient(GPhotosClient):
+    def __init__(self):
+        self.is_authenticated = False
+        self.album_id_to_album = {}
+        self.album_id_to_media_item_ids = {}
+        self.media_item_id_to_media_item = {}
+        self.upload_tokens_to_file_name = {}
+
+    def authenticate(self):
+        self.is_authenticated = True
+
+    def __check_authentication__(self):
+        if not self.is_authenticated:
+            raise Exception("Not authenticated yet")
+
+    def get_storage_quota(self):
+        self.__check_authentication__()
+        raise NotImplementedError()
+
+    def list_shared_albums(self, exclude_non_app_created_data=False):
+        self.__check_authentication__()
+        return list(filter(lambda x: x["shareInfo"] is not None, self.album_id_to_album.values()))
+
+    def list_albums(self, exclude_non_app_created_data=False):
+        self.__check_authentication__()
+        return list(
+            filter(lambda x: x["shareInfo"] is None, self.album_id_to_album.values())
+        )
+
+    def create_album(self, album_name):
+        self.__check_authentication__()
+        new_album_id = str(uuid.uuid4())
+        new_album = {
+            "id": new_album_id,
+            "title": album_name,
+            "productUrl": f"http://google.com/albums/{new_album_id}",
+            "isWriteable": True,
+            "shareInfo": None,
+            "mediaItemsCount": 0,
+            "coverPhotoBaseUrl": None,
+            "coverPhotoMediaItemId": None,
+        }
+        self.album_id_to_album[new_album_id] = new_album
+        self.album_id_to_media_item_ids[new_album_id] = set()
+        return {
+            "id": new_album["id"],
+            "title": new_album["title"],
+            "productUrl": new_album["productUrl"],
+            "isWriteable": new_album["isWriteable"],
+        }
+
+    def share_album(self, album_id, is_collaborative=False, is_commentable=False):
+        self.__check_authentication__()
+        share_token = str(uuid.uuid4())
+        share_info = {
+            "sharedAlbumOptions": {
+                "isCollaborative": is_collaborative,
+                "isCommentable": is_commentable,
+            },
+            "shareableUrl": f"http://google.com/shared-albums/{album_id}",
+            "shareToken": share_token,
+            "isJoined": True,
+            "isOwned": True,
+            "isJoinable": True,
+        }
+        self.album_id_to_album[album_id]["shareInfo"] = share_info
+        return share_info
+
+    def join_album(self, share_token):
+        self.__check_authentication__()
+        raise NotImplementedError()
+
+    def unshare_album(self, album_id):
+        self.__check_authentication__()
+        raise NotImplementedError()
+
+    def add_photos_to_album(self, album_id, media_item_ids):
+        self.__check_authentication__()
+        for media_id in media_item_ids:
+            self.album_id_to_media_item_ids[album_id].add(media_id)
+
+    def remove_photos_from_album(self, album_id, media_item_ids):
+        self.__check_authentication__()
+        for media_id in media_item_ids:
+            self.album_id_to_media_item_ids[album_id].remove(media_id)
+
+    def add_uploaded_photos_to_gphotos(self, upload_tokens, album_id=None):
+        self.__check_authentication__()
+        new_media_items_results = []
+        for upload_token in upload_tokens:
+            new_media_item_id = str(uuid.uuid4())
+
+            if album_id is not None:
+                self.album_id_to_media_item_ids[album_id].add(new_media_item_id)
+
+            new_media_item = {
+                "id": new_media_item_id,
+                "description": "New photo",
+                "productUrl": f"http://google.com/photos/{new_media_item_id}",
+                "baseUrl": f"http://google.com/photos/{new_media_item_id}",
+                "mimeType": "jpeg",
+                "mediaMetadata": {
+                    "creationTime": "2014-10-02T15:01:23Z",
+                    "width": "200px",
+                    "height": "300px",
+                    "photo": {
+                        "cameraMake": "IPhone",
+                        "cameraModel": "14 Pro",
+                        "focalLength": 50,
+                        "apertureFNumber": 1.4,
+                        "isoEquivalent": 400,
+                        "exposureTime": "0.005s",
+                    },
+                },
+                "contributorInfo": {
+                    "profilePictureBaseUrl": "http://google.com/profile/1",
+                    "displayName": "Bob Smith",
+                },
+                "filename": self.upload_tokens_to_file_name[upload_token],
+            }
+            self.media_item_id_to_media_item[new_media_item_id] = new_media_item
+            new_media_items_results.append(
+                {
+                    "uploadToken": upload_token,
+                    "status": {"code": 200, "message": "Success", "details": []},
+                    "mediaItem": new_media_item,
+                }
+            )
+
+        return {"newMediaItemResults": new_media_items_results}
+
+    def upload_photo(self, photo_file_path, file_name):
+        self.__check_authentication__()
+        upload_token = str(uuid.uuid4())
+        self.upload_tokens_to_file_name[upload_token] = file_name
+        return upload_token
+
+    def search_for_media_items(self, album_id=None, filters=None, order_by=None):
+        self.__check_authentication__()
+        if album_id is not None:
+            return [
+                self.media_item_id_to_media_item[media_item_id]
+                for media_item_id in self.album_id_to_media_item_ids[album_id]
+            ]
+        else:
+            return list(self.media_item_id_to_media_item.values())
+
+    def update_album(self, album_id, new_title=None, new_cover_media_item_id=None):
+        self.__check_authentication__()
+
+        album_info = self.album_id_to_album[album_id]
+        if new_title is not None:
+            album_info["title"] = new_title
+        if new_cover_media_item_id is not None:
+            album_info["coverPhotoMediaItemId"] = new_cover_media_item_id
+            album_info["coverPhotoBaseUrl"] = (
+                f"http://google.com/photos/{new_cover_media_item_id}"
+            )
