@@ -239,6 +239,19 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(shared_albums), 0)
         self.assertEqual(len(albums), 0)
 
+    def test_unshare_album__on_album_it_doesnt_own__throws_error(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album["id"])["shareToken"]
+        client_2.join_album(share_token)
+
+        with self.assertRaises(Exception):
+            client_2.unshare_album(album["id"])
+
     def test_unshare_album__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
             repo = FakeItemsRepository()

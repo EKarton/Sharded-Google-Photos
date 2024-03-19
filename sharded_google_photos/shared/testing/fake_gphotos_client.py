@@ -91,7 +91,7 @@ class FakeItemsRepository:
         self.__album_id_to_accessible_client_ids[album_id].add(client_id)
 
     def unshare_album(self, client_id, album_id):
-        if client_id not in self.__album_id_to_accessible_client_ids[album_id]:
+        if client_id not in self.__album_id_to_owned_client_id[album_id]:
             raise Exception("Cannot unshare album that it does not own")
 
         self.__album_id_to_accessible_client_ids[album_id] = set([client_id])
