@@ -328,12 +328,165 @@ class FakeGPhotosClientTests(unittest.TestCase):
 
             client.add_photos_to_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
 
+    def test_remove_photos_from_album__on_photo_in_album__removes_photo_from_album(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+
+        media_items_in_album_1 = client_1.search_for_media_items(album_1["id"])
+        self.assertEqual(len(media_items_in_album_1), 0)
+
+    def test_remove_photos_from_album__on_photo_in_shared_album__removes_photo_from_shared_album_on_all_users(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+        upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_2.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        client_2.remove_photos_from_album(album_1["id"], [new_media_item_id])
+
+        self.assertEqual(len(client_1.search_for_media_items(album_1["id"])), 0)
+        self.assertEqual(len(client_2.search_for_media_items(album_1["id"])), 0)
+
+    def test_remove_photos_from_album__on_photo_in_album__does_not_remove_photo_from_gphotos(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+
+        media_items = client_1.search_for_media_items()
+        self.assertEqual(len(media_items), 1)
+        self.assertEqual(media_items[0]["id"], new_media_item_id)
+
+    def test_remove_photos_from_album__on_photo_in_two_album__does_not_remove_photo_from_other_albums(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        album_2 = client_1.create_album("Photos/2012")
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        client_1.add_photos_to_album(album_2["id"], [new_media_item_id])
+
+        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+
+        media_items = client_1.search_for_media_items(album_2["id"])
+        self.assertEqual(len(media_items), 1)
+        self.assertEqual(media_items[0]["id"], new_media_item_id)
+
+    def test_remove_photos_from_album__not_owned_photo__throws_error(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        with self.assertRaises(Exception):
+            client_2.remove_photos_from_album(album_1["id"], [new_media_item_id])
+
     def test_remove_photos_from_album__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
             repo = FakeItemsRepository()
             client = FakeGPhotosClient(repo)
 
             client.remove_photos_from_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
+
+    def test_add_uploaded_photos_to_gphotos__no_album__adds_to_gphotos_account(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        media_items = client_1.search_for_media_items()
+        self.assertEqual(len(media_items), 1)
+        self.assertEqual(media_items[0]["id"], new_media_item_id)
+
+    def test_add_uploaded_photos_to_gphotos__regular_album__adds_to_album(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        media_items = client_1.search_for_media_items(album_1["id"])
+        self.assertEqual(len(media_items), 1)
+        self.assertEqual(media_items[0]["id"], new_media_item_id)
+
+    def test_add_uploaded_photos_to_gphotos__shared_album__adds_to_shared_album(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        client_1.share_album(album_1["id"])
+        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+
+        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        media_items = client_1.search_for_media_items(album_1["id"])
+        self.assertEqual(len(media_items), 1)
+        self.assertEqual(media_items[0]["id"], new_media_item_id)
+
+    def test_add_uploaded_photos_to_gphotos__another_user_adds_to_shared_album__both_sees_photo_on_shared_album(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+        upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+
+        results = client_2.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+
+        new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
+        media_items_from_client_1 = client_1.search_for_media_items(album_1["id"])
+        media_items_from_client_2 = client_2.search_for_media_items(album_1["id"])
+        self.assertEqual(len(media_items_from_client_1), 1)
+        self.assertEqual(media_items_from_client_1[0]["id"], new_media_item_id)
+        self.assertEqual(len(media_items_from_client_2), 1)
+        self.assertEqual(media_items_from_client_2[0]["id"], new_media_item_id)
 
     def test_add_uploaded_photos_to_gphotos__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
@@ -342,6 +495,15 @@ class FakeGPhotosClientTests(unittest.TestCase):
 
             client.add_uploaded_photos_to_gphotos([uuid.uuid4(), uuid.uuid4()])
 
+    def test_upload_photo__returns_upload_token(self):
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
+        client.authenticate()
+
+        upload_token = client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+
+        self.assertNotEqual(upload_token, None)
+
     def test_upload_photo__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
             repo = FakeItemsRepository()
@@ -349,12 +511,111 @@ class FakeGPhotosClientTests(unittest.TestCase):
 
             client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
 
+    def test_search_for_media_items__no_photos__returns_nothing(self):
+        pass
+
+    def test_search_for_media_items__photos_on_other_account__returns_correct_values(
+        self,
+    ):
+        pass
+
+    def test_search_for_media_items__on_album_with_photo__returns_photo(self):
+        pass
+
+    def test_search_for_media_items__photo_on_existing_album__on_different_album__returns_nothing(
+        self,
+    ):
+        pass
+
+    def test_search_for_media_items__photo_on_existing_shared_album__on_different_shared_album__returns_nothing(
+        self,
+    ):
+        pass
+
+    def test_search_for_media_items__on_shared_album_with_photo__returns_photo(self):
+        pass
+
+    def test_search_for_media_items__on_shared_album_with_photo_on_different_account__returns_photo(
+        self,
+    ):
+        pass
+
     def test_search_for_media_items__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):
             repo = FakeItemsRepository()
             client = FakeGPhotosClient(repo)
 
             client.search_for_media_items()
+
+    def test_update_album__updates_album(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+
+        client_1.update_album(album_1["id"], "Photos/2020")
+
+        shared_albums = client_1.list_albums()
+        self.assertEqual(len(shared_albums), 1)
+        self.assertEqual(shared_albums[0]["title"], "Photos/2020")
+
+    def test_update_album__on_owned_shared_album_owned__updates_album(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        client_1.share_album(album_1["id"])["shareToken"]
+
+        client_1.update_album(album_1["id"], "Photos/2020")
+
+        shared_albums = client_1.list_shared_albums()
+        self.assertEqual(len(shared_albums), 1)
+        self.assertEqual(shared_albums[0]["title"], "Photos/2020")
+
+    def test_update_album__on_owned_shared_album_owned__updates_album_for_all_users(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+
+        client_1.update_album(album_1["id"], "Photos/2020")
+
+        shared_albums_on_client_1 = client_1.list_shared_albums()
+        shared_albums_on_client_2 = client_2.list_shared_albums()
+        self.assertEqual(len(shared_albums_on_client_1), 1)
+        self.assertEqual(shared_albums_on_client_1[0]["title"], "Photos/2020")
+        self.assertEqual(len(shared_albums_on_client_2), 1)
+        self.assertEqual(shared_albums_on_client_2[0]["title"], "Photos/2020")
+
+    def test_update_album__on_not_owned_shared_album__throws_error(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        client_2.join_album(share_token)
+
+        with self.assertRaises(Exception):
+            client_2.update_album(album_1["id"], "Photos/2020")
+
+    def test_update_album__album_on_another_account__throws_error(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_2 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        client_2.authenticate()
+        album_1 = client_1.create_album("Photos/2011")
+
+        with self.assertRaises(Exception):
+            client_2.update_album(album_1["id"], "Photos/2020")
 
     def test_update_album__not_authenticated__throws_error(self):
         with self.assertRaises(Exception):

@@ -192,10 +192,11 @@ class FakeItemsRepository:
                 for media_item_id in self.__album_id_to_media_item_ids[album_id]
             ]
         else:
-
             def is_valid(media_item):
-                a = self.__media_item_ids_to_owned_client_id[media_item["id"]]
-                is_owned = client_id == a
+                is_owned = (
+                    client_id
+                    == self.__media_item_ids_to_owned_client_id[media_item["id"]]
+                )
                 return is_owned
 
             all_media_items = list(self.__media_item_id_to_media_item.values())
