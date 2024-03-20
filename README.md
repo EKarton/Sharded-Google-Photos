@@ -2,7 +2,11 @@
 
 A tool to shard photos across multiple Google Photo accounts
 
-## Getting Started
+## Using the Library in your projects
+
+1. Run `pip install sharded-google-photos`
+
+## Getting Started to Contribute
 
 1. Ensure Python3, Pip, and Poetry are installed on your machine
 
