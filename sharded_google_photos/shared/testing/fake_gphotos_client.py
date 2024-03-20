@@ -1,4 +1,5 @@
 import uuid
+import sys
 
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
 
@@ -84,7 +85,7 @@ class FakeItemsRepository:
         self.__album_id_to_album[album_id]["shareInfo"] = share_info
         self.__share_token_to_album_id[share_token] = album_id
 
-        return share_info
+        return {"shareInfo": share_info}
 
     def join_album(self, client_id, share_token):
         album_id = self.__share_token_to_album_id[share_token]
@@ -192,6 +193,7 @@ class FakeItemsRepository:
                 for media_item_id in self.__album_id_to_media_item_ids[album_id]
             ]
         else:
+
             def is_valid(media_item):
                 is_owned = (
                     client_id
@@ -217,12 +219,28 @@ class FakeItemsRepository:
                 f"http://google.com/photos/{new_cover_media_item_id}"
             )
 
+        return {
+            "id": album_info["id"],
+            "title": album_info["title"],
+            "productUrl": album_info["productUrl"],
+            "isWriteable": album_info["isWriteable"],
+            "mediaItemsCount": album_info["mediaItemsCount"],
+            "coverPhotoBaseUrl": album_info["coverPhotoBaseUrl"],
+            "coverPhotoMediaItemId": album_info["coverPhotoMediaItemId"],
+        }
+
 
 class FakeGPhotosClient(GPhotosClient):
-    def __init__(self, repository: FakeItemsRepository, id=None):
+    def __init__(
+        self,
+        repository: FakeItemsRepository,
+        id: str = None,
+        max_num_photos: int = sys.maxsize,
+    ):
         self.is_authenticated = False
         self.repository = repository
         self.id = str(uuid.uuid4()) if id is None else id
+        self.max_num_photos = max_num_photos
 
     def authenticate(self):
         self.is_authenticated = True
@@ -233,7 +251,14 @@ class FakeGPhotosClient(GPhotosClient):
 
     def get_storage_quota(self):
         self.__check_authentication__()
-        raise NotImplementedError()
+
+        # Each photo is 1 byte
+        return {
+            "limit": str(self.max_num_photos),
+            "usage": str(len(self.search_for_media_items())),
+            "usageInDrive": "0",
+            "usageInDriveTrash": "0",
+        }
 
     def list_shared_albums(self, exclude_non_app_created_data=False):
         self.__check_authentication__()
@@ -287,6 +312,6 @@ class FakeGPhotosClient(GPhotosClient):
 
     def update_album(self, album_id, new_title=None, new_cover_media_item_id=None):
         self.__check_authentication__()
-        self.repository.update_album(
+        return self.repository.update_album(
             self.id, album_id, new_title, new_cover_media_item_id
         )

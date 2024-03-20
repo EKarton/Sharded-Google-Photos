@@ -34,7 +34,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareToken"]
+        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
         shared_albums = client_2.list_shared_albums()
@@ -51,7 +51,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        client_1.share_album(album["id"])["shareToken"]
+        client_1.share_album(album["id"])["shareInfo"]["shareToken"]
 
         shared_albums = client_2.list_shared_albums()
 
@@ -157,7 +157,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         album = client_1.create_album("Photos/2011")
 
-        share_info = client_1.share_album(album["id"])
+        share_info = client_1.share_album(album["id"])["shareInfo"]
 
         self.assertFalse(share_info["sharedAlbumOptions"]["isCollaborative"])
         self.assertFalse(share_info["sharedAlbumOptions"]["isCommentable"])
@@ -190,7 +190,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareToken"]
+        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
 
         client_2.join_album(share_token)
 
@@ -210,7 +210,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
         album = client_1.create_album("Photos/2011")
-        client_1.share_album(album["id"])["shareToken"]
+        client_1.share_album(album["id"])["shareInfo"]["shareToken"]
 
         client_1.unshare_album(album["id"])
 
@@ -229,7 +229,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareToken"]
+        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
         client_1.unshare_album(album["id"])
@@ -246,7 +246,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareToken"]
+        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
         with self.assertRaises(Exception):
@@ -283,7 +283,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareToken"]
+        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
         upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
         results = client_2.add_uploaded_photos_to_gphotos([upload_token])
@@ -366,7 +366,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
         upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
         results = client_2.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
@@ -420,7 +420,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
         upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
         results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
@@ -487,7 +487,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
         upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
 
@@ -577,7 +577,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
         upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
         results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
@@ -598,14 +598,15 @@ class FakeGPhotosClientTests(unittest.TestCase):
 
             client.search_for_media_items()
 
-    def test_update_album__updates_album(self):
+    def test_update_album__returns_info_and_updates_album(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
         album_1 = client_1.create_album("Photos/2011")
 
-        client_1.update_album(album_1["id"], "Photos/2020")
+        updated_album_info = client_1.update_album(album_1["id"], "Photos/2020")
 
+        self.assertEqual(updated_album_info["title"], "Photos/2020")
         shared_albums = client_1.list_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2020")
@@ -615,7 +616,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        client_1.share_album(album_1["id"])["shareToken"]
+        client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
 
         client_1.update_album(album_1["id"], "Photos/2020")
 
@@ -632,7 +633,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
         client_1.update_album(album_1["id"], "Photos/2020")
@@ -651,7 +652,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareToken"]
+        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
         with self.assertRaises(Exception):
