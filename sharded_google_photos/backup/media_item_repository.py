@@ -29,7 +29,7 @@ class MediaItemRepository:
 
     def get_media_item_from_file_name(self, file_name):
         if file_name not in self.file_name_to_media_ids:
-            return None
+            raise Exception(f"Media item {file_name} not found")
 
         media_id = self.file_name_to_media_ids[file_name]
         return self.media_id_to_obj[media_id]
@@ -41,11 +41,15 @@ class MediaItemRepository:
         if len(media_ids) == 0:
             return
 
-        self.gphoto_client.remove_photos_from_album(self.album_id, media_ids)
         for media_id in media_ids:
+            if media_id not in self.media_id_to_obj:
+                raise Exception("Media item is not found - cannot be deleted")
+
             media_item = self.media_id_to_obj[media_id]
             del self.media_id_to_obj[media_id]
             del self.file_name_to_media_ids[media_item["filename"]]
+
+        self.gphoto_client.remove_photos_from_album(self.album_id, media_ids)
 
         logger.debug(f"Media items removed from album {self.album_id}: {media_ids}")
 
@@ -61,6 +65,10 @@ class MediaItemRepository:
 
         for media_item in media_items:
             self.media_id_to_obj[media_item["id"]] = media_item
-            self.file_name_to_media_ids[media_item["filename"]] = media_item
+            self.file_name_to_media_ids[media_item["filename"]] = media_item['id']
+
+        print(self.media_id_to_obj)
+        print()
+        print(self.file_name_to_media_ids)
 
         logger.debug(f"Added new media items: {media_items}")

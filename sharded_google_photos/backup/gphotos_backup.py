@@ -73,11 +73,11 @@ class GPhotosBackup:
             media_ids_to_remove = set()
             for deletion_diff in chunked_new_diffs[album_title].get("-", []):
                 file_name = deletion_diff["file_name"]
-                media_item = media_item_repository.get_media_item_from_file_name(
-                    file_name
-                )
 
-                if media_item is not None:
+                if media_item_repository.contains_file_name(file_name):
+                    media_item = media_item_repository.get_media_item_from_file_name(
+                        file_name
+                    )
                     media_ids_to_remove.add(media_item["id"])
 
             media_item_repository.remove_media_items(list(media_ids_to_remove))
