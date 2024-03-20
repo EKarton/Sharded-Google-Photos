@@ -34,19 +34,31 @@ class SharedAlbumRepository:
         return title in self.album_title_to_album_id
 
     def get_album_from_title(self, title):
+        if title not in self.album_title_to_album_id:
+            raise Exception(f"Album {title} does not exist")
+
         album_id = self.album_title_to_album_id[title]
         return self.album_id_to_album[album_id]
 
     def create_shared_album(self, client_idx, title):
+        if title in self.album_title_to_album_id:
+            raise Exception(f"Album {title} already exists")
+
         new_album = self.gphoto_clients[client_idx].create_album(title)
         new_album["client_idx"] = client_idx
+
         new_album_id = new_album["id"]
+        share_info = self.gphoto_clients[client_idx].share_album(new_album_id)
+        new_album["shareInfo"] = share_info["shareInfo"]
 
         self.album_id_to_album[new_album_id] = new_album
         self.album_title_to_album_id[title] = new_album_id
         return new_album
 
     def rename_album(self, album_id, new_title):
+        if album_id not in self.album_id_to_album:
+            raise Exception(f"Album {album_id} does not exist")
+
         old_album = self.album_id_to_album[album_id]
         old_title = old_album["title"]
         client_idx = old_album["client_idx"]

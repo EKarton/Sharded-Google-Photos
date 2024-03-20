@@ -53,15 +53,12 @@ class GPhotosBackup:
                     f"Needs {new_storage_needed} bytes - to client idx {client_idx}"
                 )
 
-                # Create a new album and update indexes
+                # Create a new album and store its shareable url
                 album = shared_album_repository.create_shared_album(
                     client_idx, album_title
                 )
                 client = self.gphoto_clients[client_idx]
-
-                # Share albums
-                share_options = client.share_album(album["id"])
-                shared_album_uris.append(share_options["shareInfo"]["shareableUrl"])
+                shared_album_uris.append(album["shareInfo"]["shareableUrl"])
 
             logger.debug(
                 f"Step 4: Found album for {album_title}: {album} on client {album['client_idx']}"
