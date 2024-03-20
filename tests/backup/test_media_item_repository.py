@@ -87,7 +87,7 @@ class MediaItemRepositoryTest(unittest.TestCase):
 
         repo = MediaItemRepository(album["id"], client)
         repo.setup()
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Media item 2.jpg not found"):
             repo.get_media_item_from_file_name("2.jpg")
 
     def test_get_media_item_from_file_name__with_existing_photo__should_not_refetch_photos(
@@ -187,7 +187,7 @@ class MediaItemRepositoryTest(unittest.TestCase):
         repo = MediaItemRepository(album["id"], client)
         repo.setup()
         repo.remove_media_items([uploaded_media_item["id"]])
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Media item is not found"):
             repo.remove_media_items([uploaded_media_item["id"]])
 
     def test_add_uploaded_photos__adds_photos_to_album(self):

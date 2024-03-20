@@ -61,7 +61,7 @@ class GPhotosBackup:
                 shared_album_uris.append(album["shareInfo"]["shareableUrl"])
 
             logger.debug(
-                f"Step 4: Found album for {album_title}: {album} on client {album['client_idx']}"
+                f"Step 4: Found album for {album_title}: client {album['client_idx']}"
             )
 
             # Find the existing photos that are in that album
@@ -94,7 +94,7 @@ class GPhotosBackup:
 
             # Attach them to gphotos album
             media_item_repository.add_uploaded_photos(upload_tokens)
-            logger.debug(f"Step 8: Added uploaded photos to album")
+            logger.debug("Step 8: Added uploaded photos to album")
 
             # Rename the album if it's currently empty
             if media_item_repository.get_num_media_items() == 0:
@@ -102,12 +102,12 @@ class GPhotosBackup:
                 new_album = shared_album_repository.rename_album(
                     album["id"], new_album_name
                 )
-                logger.debug(f"Step 9: Renamed empty album to be deleted")
+                logger.debug("Step 9: Renamed empty album to be deleted")
 
                 self.gphoto_clients[new_album["client_idx"]].unshare_album(
                     new_album["id"]
                 )
-                logger.debug(f"Step 10: Unshared empty album")
+                logger.debug("Step 10: Unshared empty album")
 
         return shared_album_uris
 

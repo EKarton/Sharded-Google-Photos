@@ -35,7 +35,7 @@ class GPhotosClient:
         credentials = None
         try:
             credentials = self.__get_saved_credentials__()
-        except:
+        except Exception:
             logger.debug("Failed to get saved credentials")
             logger.debug("Fetching credentials")
             credentials = self.__get_credentials_via_oauth__()
@@ -244,10 +244,10 @@ class GPhotosClient:
         uri = "https://photoslibrary.googleapis.com/v1/albums/{0}:batchRemoveMediaItems".format(
             album_id
         )
-        response = self.session.post(uri, request_body)
-        if response.status_code != 200:
+        res = self.session.post(uri, request_body)
+        if res.status_code != 200:
             raise Exception(
-                f"Failed to remove photos from album is {response.status_code} {response.content}"
+                f"Failed to remove photos from album: {res.status_code} {res.content}"
             )
 
     def add_uploaded_photos_to_gphotos(self, upload_tokens, album_id=None):
@@ -293,16 +293,14 @@ class GPhotosClient:
             return
 
         self.session.headers["X-Goog-Upload-File-Name"] = file_name
-        upload_token = self.session.post(
+        res = self.session.post(
             "https://photoslibrary.googleapis.com/v1/uploads", photo_bytes
         )
-        if upload_token.status_code != 200 or not upload_token.content:
-            logger.error(
-                f"Could not get valid upload token {upload_token.status_code} {upload_token.content}"
-            )
+        if res.status_code != 200 or not res.content:
+            logger.error(f"No valid upload token {res.status_code} {res.content}")
             return
 
-        return upload_token.content.decode()
+        return res.content.decode()
 
     def search_for_media_items(self, album_id=None, filters=None, order_by=None):
         logger.debug(f"Listing media items with filter {album_id} {filters} {order_by}")
@@ -337,11 +335,11 @@ class GPhotosClient:
     def update_album(self, album_id, new_title=None, new_cover_media_item_id=None):
         uri = f"https://photoslibrary.googleapis.com/v1/albums/{album_id}"
 
-        if new_title != None and new_cover_media_item_id != None:
+        if new_title is not None and new_cover_media_item_id is not None:
             uri += "?updateMask=title&updateMask=coverPhotoMediaItemId"
-        elif new_title != None:
+        elif new_title is not None:
             uri += "?updateMask=title"
-        elif new_cover_media_item_id != None:
+        elif new_cover_media_item_id is not None:
             uri += "?updateMask=coverPhotoMediaItemId"
 
         request = {"title": new_title, "coverPhotoMediaItemId": new_cover_media_item_id}

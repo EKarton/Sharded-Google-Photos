@@ -7,10 +7,10 @@ from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRe
 
 class FakeGPhotosClientTests(unittest.TestCase):
     def test_get_storage_quota__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.get_storage_quota()
 
     def test_list_shared_albums__with_shared_album__returns_shared_album(self):
@@ -68,10 +68,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(shared_albums), 0)
 
     def test_list_shared_albums__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.list_shared_albums()
 
     def test_list_albums__created_albums__returns_albums(self):
@@ -112,10 +112,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(albums_list), 0)
 
     def test_list_albums__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.list_albums()
 
     def test_create_album__returns_album_and_response_correctly(self):
@@ -143,10 +143,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(albums_list), 0)
 
     def test_create_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.create_album("Photos/2011")
 
     def test_share_album__non_collaborative_and_non_commentable__returns_correct_response(
@@ -173,14 +173,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2.authenticate()
         album = client_1.create_album("Photos/2011")
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(
+            Exception, "Cannot share album that it cannot have access to"
+        ):
             client_2.share_album(album["id"])
 
     def test_share_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.share_album(uuid.uuid4())
 
     def test_join_album__should_return_shared_albums(self):
@@ -199,10 +201,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(shared_albums[0]["id"], album["id"])
 
     def test_join_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.join_album(uuid.uuid4())
 
     def test_unshare_album__removes_from_shared_album(self):
@@ -249,14 +251,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(
+            Exception, "Cannot unshare album that it does not own"
+        ):
             client_2.unshare_album(album["id"])
 
     def test_unshare_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.unshare_album(uuid.uuid4())
 
     def test_add_photos_to_album__existing_album__adds_media_items_to_albums(self):
@@ -335,10 +339,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(media_items_in_album_2), 0)
 
     def test_add_photos_to_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.add_photos_to_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
 
     def test_remove_photos_from_album__on_photo_in_album__removes_photo_from_album(
@@ -426,14 +430,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(
+            Exception, "Cannot remove someone else's photos from album"
+        ):
             client_2.remove_photos_from_album(album_1["id"], [new_media_item_id])
 
     def test_remove_photos_from_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.remove_photos_from_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
 
     def test_add_uploaded_photos_to_gphotos__no_album__adds_to_gphotos_account(self):
@@ -502,10 +508,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(media_items_from_client_2[0]["id"], new_media_item_id)
 
     def test_add_uploaded_photos_to_gphotos__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.add_uploaded_photos_to_gphotos([uuid.uuid4(), uuid.uuid4()])
 
     def test_upload_photo__returns_upload_token(self):
@@ -518,10 +524,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertNotEqual(upload_token, None)
 
     def test_upload_photo__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
 
     def test_search_for_media_items__no_photos__returns_nothing(self):
@@ -592,10 +598,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(search_results_2[0]["id"], new_media_item_id)
 
     def test_search_for_media_items__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
             client.search_for_media_items()
 
     def test_update_album__returns_info_and_updates_album(self):
@@ -655,7 +661,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
         client_2.join_album(share_token)
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Cannot update album it does not own"):
             client_2.update_album(album_1["id"], "Photos/2020")
 
     def test_update_album__album_on_another_account__throws_error(self):
@@ -666,12 +672,12 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2.authenticate()
         album_1 = client_1.create_album("Photos/2011")
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Cannot update album it does not own"):
             client_2.update_album(album_1["id"], "Photos/2020")
 
     def test_update_album__not_authenticated__throws_error(self):
-        with self.assertRaises(Exception):
-            repo = FakeItemsRepository()
-            client = FakeGPhotosClient(repo)
+        repo = FakeItemsRepository()
+        client = FakeGPhotosClient(repo)
 
-            client.update_album()
+        with self.assertRaisesRegex(Exception, "Not authenticated yet"):
+            client.update_album("album1")

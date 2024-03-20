@@ -96,7 +96,7 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
 
         repo = SharedAlbumRepository([client])
         repo.setup()
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Album Photos/2020 does not exist"):
             repo.get_album_from_title("Photos/2020")
 
     def test_create_shared_album__creates_new_album(self):
@@ -123,7 +123,7 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
 
         repo = SharedAlbumRepository([client])
         repo.setup()
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Album Photos/2011 already exists"):
             repo.create_shared_album(0, "Photos/2011")
 
     def test_create_shared_album__calls_contains_album_title_on_new_album__returns_true(
@@ -189,7 +189,7 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
         repo = SharedAlbumRepository([client])
         repo.setup()
         repo.create_shared_album(0, "Photos/2011")
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "Album 123 does not exist"):
             repo.rename_album("123", "Photos/2022")
 
     def test_rename_album__to_duplicate_album_title__throws_error(self):
@@ -200,7 +200,9 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
         repo.setup()
         repo.create_shared_album(0, "Photos/2011")
         album_2 = repo.create_shared_album(0, "Photos/2012")
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(
+            Exception, "Album with name Photos/2011 already exists"
+        ):
             repo.rename_album(album_2["id"], "Photos/2011")
 
     def test_rename_album__does_not_fetch_new_albums(self):
