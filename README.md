@@ -33,3 +33,24 @@ poetry run flake8 && poetry run black sharded_google_photos/
 ```
 poetry run coverage run -m pytest && poetry run coverage report -m
 ```
+
+6. To publish your app:
+
+    1. First, set your PyPI api token to Poetry
+
+        ```
+        poetry config pypi-token.pypi <YOUR_API_TOKEN>
+        ```
+
+    2. Then, build the app by running:
+
+        ```
+        poetry build
+        ```
+
+    3. Finally, publish the app by running:
+
+        ```
+        poetry publish
+        ```
+
