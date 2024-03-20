@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from sharded_google_photos.backup.repositories import SharedAlbumRepository
-from sharded_google_photos.backup.repositories import MediaItemRepository
+from sharded_google_photos.backup.shared_album_repository import SharedAlbumRepository
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
 
@@ -182,6 +181,27 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
         shared_albums = client.list_shared_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2022")
+
+    def test_rename_album__on_unknown_album_id__throws_error(self):
+        client = FakeGPhotosClient(FakeItemsRepository())
+        client.authenticate()
+
+        repo = SharedAlbumRepository([client])
+        repo.setup()
+        repo.create_shared_album(0, "Photos/2011")
+        with self.assertRaises(Exception):
+            repo.rename_album("123", "Photos/2022")
+
+    def test_rename_album__to_duplicate_album_title__throws_error(self):
+        client = FakeGPhotosClient(FakeItemsRepository())
+        client.authenticate()
+
+        repo = SharedAlbumRepository([client])
+        repo.setup()
+        repo.create_shared_album(0, "Photos/2011")
+        album_2 = repo.create_shared_album(0, "Photos/2012")
+        with self.assertRaises(Exception):
+            repo.rename_album(album_2["id"], "Photos/2011")
 
     def test_rename_album__does_not_fetch_new_albums(self):
         client = FakeGPhotosClient(FakeItemsRepository())

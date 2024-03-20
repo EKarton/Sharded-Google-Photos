@@ -2,8 +2,8 @@ import os
 import logging
 
 from sharded_google_photos.backup.diffs_splitter import diffs_splitter
-from sharded_google_photos.backup.repositories import SharedAlbumRepository
-from sharded_google_photos.backup.repositories import MediaItemRepository
+from sharded_google_photos.backup.shared_album_repository import SharedAlbumRepository
+from sharded_google_photos.backup.media_item_repository import MediaItemRepository
 from sharded_google_photos.backup.gphotos_uploader import GPhotosUploader
 
 logger = logging.getLogger(__name__)
