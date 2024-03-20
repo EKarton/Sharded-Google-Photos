@@ -43,7 +43,7 @@ class MediaItemRepository:
 
         for media_id in media_ids:
             if media_id not in self.media_id_to_obj:
-                raise Exception("Media item is not found - cannot be deleted")
+                raise Exception("Media item is not found")
 
             media_item = self.media_id_to_obj[media_id]
             del self.media_id_to_obj[media_id]
@@ -55,7 +55,7 @@ class MediaItemRepository:
 
     def add_uploaded_photos(self, upload_tokens):
         if len(upload_tokens) == 0:
-            logger.debug(f"No uploaded tokens to add")
+            logger.debug("No uploaded tokens to add")
             return
 
         results = self.gphoto_client.add_uploaded_photos_to_gphotos(
@@ -65,7 +65,7 @@ class MediaItemRepository:
 
         for media_item in media_items:
             self.media_id_to_obj[media_item["id"]] = media_item
-            self.file_name_to_media_ids[media_item["filename"]] = media_item['id']
+            self.file_name_to_media_ids[media_item["filename"]] = media_item["id"]
 
         print(self.media_id_to_obj)
         print()

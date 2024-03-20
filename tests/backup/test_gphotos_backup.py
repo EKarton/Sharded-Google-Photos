@@ -192,7 +192,9 @@ class GPhotosBackupTests(unittest.TestCase):
                 },
             ]
 
-            with self.assertRaises(Exception):
+            with self.assertRaisesRegex(
+                Exception, "Can't find space to create new album Photos/2011/At Toronto"
+            ):
                 backup_client.backup(diffs)
 
     def test_backup__create_multiple_albums_at_once__creates_albums_correctly(
