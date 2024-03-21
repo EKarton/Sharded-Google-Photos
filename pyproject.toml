@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sharded-google-photos"
-version = "0.1.1"
+version = "0.1.2"
 description = "A tool to shard photos across multiple Google Photo accounts"
 authors = ["Emilio K <e.kartonoe@gmail.com>"]
 license = "GNU General Public License v3.0"
