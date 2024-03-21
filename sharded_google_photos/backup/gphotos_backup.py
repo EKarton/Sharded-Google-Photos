@@ -92,8 +92,8 @@ class GPhotosBackup:
             )
             logger.debug(f"Step 7: Uploaded new files: {upload_tokens}")
 
-            # Attach them to gphotos album
-            media_item_repository.add_uploaded_photos(upload_tokens)
+            # Attach them to gphotos album in chunks of 50
+            self.add_uploaded_photos_safely(media_item_repository, upload_tokens)
             logger.debug("Step 8: Added uploaded photos to album")
 
             # Rename the album if it's currently empty
@@ -157,3 +157,12 @@ class GPhotosBackup:
                 best_client_idx = client_idx
 
         return best_client_idx
+
+    def add_uploaded_photos_safely(self, media_item_repository, upload_tokens):
+        MAX_UPLOAD_TOKEN_LENGTH_PER_CALL = 50
+
+        for i in range(0, len(upload_tokens), MAX_UPLOAD_TOKEN_LENGTH_PER_CALL):
+            chunked_upload_tokens = upload_tokens[
+                i : i + MAX_UPLOAD_TOKEN_LENGTH_PER_CALL
+            ]
+            media_item_repository.add_uploaded_photos(chunked_upload_tokens)
