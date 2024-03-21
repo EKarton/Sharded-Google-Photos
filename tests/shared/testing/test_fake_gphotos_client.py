@@ -455,6 +455,18 @@ class FakeGPhotosClientTests(unittest.TestCase):
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
+    def test_add_uploaded_photos_to_gphotos__more_than_50_items__throws_error(self):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repo)
+        client_1.authenticate()
+        upload_tokens = [
+            client_1.upload_photo(f"Photos/2011/dog_{i}.jpg", f"dog_{i}.jpg")
+            for i in range(50)
+        ]
+
+        with self.assertRaisesRegex(Exception, "Must have less than 50 upload tokens"):
+            client_1.add_uploaded_photos_to_gphotos(upload_tokens)
+
     def test_add_uploaded_photos_to_gphotos__regular_album__adds_to_album(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)

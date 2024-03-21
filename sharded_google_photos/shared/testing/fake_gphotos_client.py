@@ -296,6 +296,10 @@ class FakeGPhotosClient(GPhotosClient):
 
     def add_uploaded_photos_to_gphotos(self, upload_tokens, album_id=None):
         self.__check_authentication__()
+
+        if len(upload_tokens) >= 50:
+            raise Exception("Must have less than 50 upload tokens")
+
         return self.repository.add_uploaded_photos_to_gphotos(
             self.id, upload_tokens, album_id
         )
