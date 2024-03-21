@@ -82,8 +82,7 @@ class GPhotosClient:
         iaflow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(
             self.client_secret, self.scopes
         )
-        print("I am here")
-        print(iaflow, iaflow.run_local_server())
+        logger.debug("Obtained saved credentials from oauth2 flow")
         iaflow.run_local_server(
             authorization_prompt_message="Please visit this URL: {url}",
             success_message="The auth flow is complete; you may close this window.",
