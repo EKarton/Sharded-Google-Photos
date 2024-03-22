@@ -495,7 +495,51 @@ class GPhotosClientTests(unittest.TestCase):
     def test_upload_photo_in_chunks__large_file__makes_api_calls_correctly_and_returns_upload_token(
         self,
     ):
-        pass
+        get_upload_link_url = "https://photoslibrary.googleapis.com/v1/uploads"
+        upload_url = "https://photoslibrary.googleapis.com/v1/upload-url/1"
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            request_mocker.post(
+                get_upload_link_url,
+                status_code=200,
+                headers={
+                    "X-Goog-Upload-URL": upload_url,
+                    "X-Goog-Upload-Chunk-Granularity": "234567",
+                },
+                text="",
+            )
+            request_mocker.post(upload_url, status_code=200, text="1234-upload-token")
+
+            client = GPhotosClient(creds_file_path, "123.json")
+            client.authenticate()
+            upload_token = client.upload_photo_in_chunks(
+                photo_file_path="./tests/shared/resources/small-image.jpg",
+                file_name="small-image.jpg",
+            )
+
+            self.assertEqual(upload_token, "1234-upload-token")
+            self.assertEqual(len(request_mocker.request_history), 13)
+            req_1 = request_mocker.request_history[0]
+            self.assertEqual(req_1.url, get_upload_link_url)
+            self.assertEqual(req_1.headers["Content-Length"], "0")
+            self.assertEqual(req_1.headers["X-Goog-Upload-Command"], "start")
+            self.assertEqual(req_1.headers["X-Goog-Upload-Content-Type"], "image/jpeg")
+            self.assertEqual(req_1.headers["X-Goog-Upload-Protocol"], "resumable")
+            self.assertEqual(req_1.headers["X-Goog-Upload-Raw-Size"], "2622777")
+
+            for i in range(1, 12):
+                req_i = request_mocker.request_history[i]
+                self.assertEqual(req_i.url, upload_url)
+                self.assertEqual(req_i.headers["X-Goog-Upload-Command"], "upload")
+                self.assertEqual(
+                    req_i.headers["X-Goog-Upload-Offset"], str((i - 1) * 234567)
+                )
+
+            req_13 = request_mocker.request_history[12]
+            self.assertEqual(req_13.url, upload_url)
+            self.assertEqual(
+                req_13.headers["X-Goog-Upload-Command"], "upload, finalize"
+            )
+            self.assertEqual(req_13.headers["X-Goog-Upload-Offset"], "2580237")
 
     def test_upload_photo_in_chunks__uploading_middle_chunk_failed__makes_api_calls_correctly_and_returns_upload_token(
         self,
