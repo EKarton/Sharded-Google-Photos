@@ -425,4 +425,5 @@ class GPhotosClient:
 
                 chunk = next_chunk
 
+        logger.debug(f"Chunk uploading finished: {photo_file_path}")
         return upload_token
