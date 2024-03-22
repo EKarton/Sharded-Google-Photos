@@ -388,15 +388,11 @@ class GPhotosClient:
 
                 # If there is no more chunks to read, then [chunk] is the last chunk
                 is_last_chunk = not next_chunk
+                upload_cmd = "upload, finalize" if is_last_chunk else "upload"
 
-                upload_command_header = (
-                    "upload, finalize" if is_last_chunk else "upload"
-                )
+                logger.debug(f"Uploading chunk: {cur_offset} {chunk_read} {upload_cmd}")
 
-                logger.debug(
-                    f"Uploading chunk: cur_offset={cur_offset} chunk_read={chunk_read} cmd={upload_command_header}"
-                )
-                self.session.headers["X-Goog-Upload-Command"] = upload_command_header
+                self.session.headers["X-Goog-Upload-Command"] = upload_cmd
                 self.session.headers["X-Goog-Upload-Offset"] = str(cur_offset)
                 res_2 = self.session.post(upload_url, chunk)
 
