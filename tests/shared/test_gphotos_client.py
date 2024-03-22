@@ -8,7 +8,7 @@ from sharded_google_photos.shared.gphotos_client import GPhotosClient
 
 
 class GPhotosClientTests(unittest.TestCase):
-    def test_authenticate_no_saved_session_creates_and_saves_session(self):
+    def test_authenticate__no_saved_session__creates_and_saves_session(self):
         with patch(
             "google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file"
         ) as mock_installed_app_flow:
@@ -41,7 +41,7 @@ class GPhotosClientTests(unittest.TestCase):
                 self.assertEqual(client.session.credentials.client_secret, "abcd")
                 self.assertEqual(client.session.credentials.token_uri, "xyz")
 
-    def test_authenticate_has_saved_session_creates_session(self):
+    def test_authenticate__has_saved_session__creates_session(self):
         fileData = {
             "refresh_token": "123",
             "token": "1234",
@@ -65,7 +65,7 @@ class GPhotosClientTests(unittest.TestCase):
             self.assertEqual(client.session.credentials.client_secret, "abcd")
             self.assertEqual(client.session.credentials.token_uri, "xyz")
 
-    def test_get_storage_quota_returns_storage_quota(self):
+    def test_get_storage_quota__returns_storage_quota(self):
         mock_response = {
             "storageQuota": {
                 "limit": "1234",
@@ -86,7 +86,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(storage_quota, mock_response["storageQuota"])
 
-    def test_list_shared_albums_multiple_pages_returns_shared_albums_list(self):
+    def test_list_shared_albums__multiple_pages__returns_shared_albums_list(self):
         albums = [
             {
                 "id": "1",
@@ -125,7 +125,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(shared_albums, albums)
 
-    def test_list_albums_multiple_pages_returns_albums_list(self):
+    def test_list_albums__multiple_pages__returns_albums_list(self):
         albums = [
             {
                 "id": "1",
@@ -164,7 +164,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(actual_albums, albums)
 
-    def test_create_album_2xx_returns_album_info(self):
+    def test_create_album__2xx__returns_album_info(self):
         mock_response = {
             "id": "1",
             "title": "Photos/2011",
@@ -186,10 +186,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_create_album_5xx_throws_exception(self):
+    def test_create_album__5xx__throws_exception(self):
         pass
 
-    def test_share_album_2xx_returns_share_info(self):
+    def test_share_album__2xx__returns_share_info(self):
         mock_response = {
             "shareInfo": {
                 "sharedAlbumOptions": {
@@ -215,10 +215,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_share_album_5xx_throws_exception(self):
+    def test_share_album__5xx__throws_exception(self):
         pass
 
-    def test_join_album_2xx_returns_album_info(self):
+    def test_join_album__2xx__returns_album_info(self):
         mock_response = {
             "album": {
                 "id": "1",
@@ -253,10 +253,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_join_album_5xx_throws_exception(self):
+    def test_join_album__5xx__throws_exception(self):
         pass
 
-    def test_unshare_album_2xx_returns_nothing(self):
+    def test_unshare_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
             client = GPhotosClient(creds_file_path, "123.json")
             request_mocker.post(
@@ -272,7 +272,7 @@ class GPhotosClientTests(unittest.TestCase):
     def test_unshare_album_5xx_throws_exception(self):
         pass
 
-    def test_add_photos_to_album_2xx_returns_nothing(self):
+    def test_add_photos_to_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
             client = GPhotosClient(creds_file_path, "123.json")
             request_mocker.post(
@@ -285,10 +285,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, None)
 
-    def test_add_photos_to_album_5xx_throws_exception(self):
+    def test_add_photos_to_album__5xx__throws_exception(self):
         pass
 
-    def test_remove_photos_from_album_2xx_returns_nothing(self):
+    def test_remove_photos_from_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
             client = GPhotosClient(creds_file_path, "123.json")
             request_mocker.post(
@@ -304,7 +304,7 @@ class GPhotosClientTests(unittest.TestCase):
     def test_remove_photos_from_album_5xx_throws_exception(self):
         pass
 
-    def test_add_uploaded_photos_to_gphotos_2xx_returns_new_media_items(self):
+    def test_add_uploaded_photos_to_gphotos__2xx__returns_new_media_items(self):
         mock_response = {
             "newMediaItemResults": [
                 {
@@ -366,10 +366,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_add_uploaded_photos_to_gphotos_5xx_returns_nothing(self):
+    def test_add_uploaded_photos_to_gphotos__5xx__returns_nothing(self):
         pass
 
-    def test_upload_photo_2xx_returns_upload_token(self):
+    def test_upload_photo__2xx__returns_upload_token(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
             client = GPhotosClient(creds_file_path, "123.json")
             request_mocker.post(
@@ -384,10 +384,10 @@ class GPhotosClientTests(unittest.TestCase):
 
                 self.assertEqual(response, "u1")
 
-    def test_upload_photo_5xx_returns_nothing(self):
+    def test_upload_photo__5xx__returns_nothing(self):
         pass
 
-    def test_search_for_media_items_2xx_returns_media_items(self):
+    def test_search_for_media_items__2xx__returns_media_items(self):
         media_items = [
             {
                 "id": "1",
@@ -416,10 +416,10 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, media_items)
 
-    def test_search_for_media_items_5xx_throws_exception(self):
+    def test_search_for_media_items__5xx__throws_exception(self):
         pass
 
-    def test_update_album_with_new_title_2xx_returns_nothing(self):
+    def test_update_album__with_new_title__returns_nothing(self):
         mock_response = {
             "id": "123",
             "title": "Photos/2012",
@@ -442,7 +442,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_update_album_with_new_cover_media_item_id_2xx_returns_new_album_info(self):
+    def test_update_album__with_new_cover_media_item_id__returns_new_album_info(self):
         mock_response = {
             "id": "123",
             "title": "Photos/2011",
@@ -465,7 +465,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
-    def test_update_album_with_new_title_and_new_cover_media_item_id_2xx_returns_new_album_info(
+    def test_update_album__with_new_title_and_new_cover_media_item_id__returns_new_album_info(
         self,
     ):
         mock_response = {
