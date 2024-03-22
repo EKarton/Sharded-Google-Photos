@@ -278,31 +278,6 @@ class GPhotosClient:
 
         return response.json()
 
-    def upload_photo(self, photo_file_path, file_name):
-        logger.debug(f"Uploading photo {photo_file_path}")
-
-        self.session.headers["Content-type"] = "application/octet-stream"
-        self.session.headers["X-Goog-Upload-Protocol"] = "raw"
-
-        try:
-            photo_file = open(photo_file_path, mode="rb")
-            photo_bytes = photo_file.read()
-        except OSError as err:
-            logger.error(
-                "Could not read file '{0}' -- {1}".format(photo_file_path, err)
-            )
-            return
-
-        self.session.headers["X-Goog-Upload-File-Name"] = file_name
-        res = self.session.post(
-            "https://photoslibrary.googleapis.com/v1/uploads", photo_bytes
-        )
-        if res.status_code != 200 or not res.content:
-            logger.error(f"No valid upload token {res.status_code} {res.content}")
-            return
-
-        return res.content.decode()
-
     def search_for_media_items(self, album_id=None, filters=None, order_by=None):
         logger.debug(f"Listing media items with filter {album_id} {filters} {order_by}")
 
@@ -352,6 +327,31 @@ class GPhotosClient:
             )
 
         return response.json()
+
+    def upload_photo(self, photo_file_path, file_name):
+        logger.debug(f"Uploading photo {photo_file_path}")
+
+        self.session.headers["Content-type"] = "application/octet-stream"
+        self.session.headers["X-Goog-Upload-Protocol"] = "raw"
+
+        try:
+            photo_file = open(photo_file_path, mode="rb")
+            photo_bytes = photo_file.read()
+        except OSError as err:
+            logger.error(
+                "Could not read file '{0}' -- {1}".format(photo_file_path, err)
+            )
+            return
+
+        self.session.headers["X-Goog-Upload-File-Name"] = file_name
+        res = self.session.post(
+            "https://photoslibrary.googleapis.com/v1/uploads", photo_bytes
+        )
+        if res.status_code != 200 or not res.content:
+            logger.error(f"No valid upload token {res.status_code} {res.content}")
+            return
+
+        return res.content.decode()
 
     def upload_photo_in_chunks(self, photo_file_path, file_name):
         upload_token = None
