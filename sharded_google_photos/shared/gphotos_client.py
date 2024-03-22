@@ -394,6 +394,7 @@ class GPhotosClient:
 
                 self.session.headers["X-Goog-Upload-Command"] = upload_cmd
                 self.session.headers["X-Goog-Upload-Offset"] = str(cur_offset)
+
                 res_2 = self.session.post(upload_url, chunk)
 
                 if res_2.status_code != 200:
@@ -404,23 +405,24 @@ class GPhotosClient:
                     self.session.headers["Content-Length"] = "0"
                     self.session.headers["X-Goog-Upload-Command"] = "query"
 
-                    self.session.post(upload_url)
+                    req_3 = self.session.post(upload_url)
 
-                    upload_status = self.session.headers["X-Goog-Upload-Status"]
-                    size_received = int(
-                        self.session.headers["X-Goog-Upload-Size-Received"]
-                    )
+                    upload_status = req_3.headers["X-Goog-Upload-Status"]
+                    size_received = int(req_3.headers["X-Goog-Upload-Size-Received"])
 
                     if upload_status != "active":
                         raise Exception("Upload is no longer active")
 
                     logger.debug(f"Adjusted seek to {size_received}")
-                    file_obj.seek(size_received)
+                    file_obj.seek(size_received, 0)
+                    cur_offset = size_received
+                    next_chunk = file_obj.read(chunk_size)
+                else:
+                    cur_offset += chunk_read
 
                 if is_last_chunk:
                     upload_token = res_2.content.decode()
 
-                cur_offset += chunk_read
                 chunk = next_chunk
 
         return upload_token
