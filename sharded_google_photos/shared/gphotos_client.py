@@ -1,5 +1,7 @@
 import json
 import logging
+import mimetypes
+import os
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import AuthorizedSession
@@ -350,3 +352,79 @@ class GPhotosClient:
             )
 
         return response.json()
+
+    def upload_photo_in_chunks(self, photo_file_path, file_name):
+        upload_token = None
+        mime_type, _ = mimetypes.guess_type(photo_file_path)
+        file_size_in_bytes = os.stat(photo_file_path).st_size
+
+        logger.debug(
+            f"Uploading in chunks with mime_type {mime_type} and file size {file_size_in_bytes}"
+        )
+
+        self.session.headers["Content-Length"] = "0"
+        self.session.headers["X-Goog-Upload-Command"] = "start"
+        self.session.headers["X-Goog-Upload-Content-Type"] = mime_type
+        self.session.headers["X-Goog-Upload-Protocol"] = "resumable"
+        self.session.headers["X-Goog-Upload-Raw-Size"] = str(file_size_in_bytes)
+
+        res_1 = self.session.post("https://photoslibrary.googleapis.com/v1/uploads")
+        if res_1.status_code != 200:
+            raise Exception(
+                f"Unable to initialize chunked upload: {res_1.status_code} {res_1.content}"
+            )
+
+        upload_url = res_1.headers["X-Goog-Upload-URL"]
+        chunk_size = int(res_1.headers["X-Goog-Upload-Chunk-Granularity"])
+
+        logger.debug(f"Obtained upload url and chunk size: {upload_url} {chunk_size}")
+
+        with open(photo_file_path, "rb") as file_obj:
+            cur_offset = 0
+            chunk = file_obj.read(chunk_size)
+            while chunk:
+                chunk_read = len(chunk)
+                next_chunk = file_obj.read(chunk_size)
+
+                # If there is no more chunks to read, then [chunk] is the last chunk
+                is_last_chunk = not next_chunk
+
+                upload_command_header = (
+                    "upload, finalize" if is_last_chunk else "upload"
+                )
+
+                logger.debug(
+                    f"Uploading chunk: cur_offset={cur_offset} chunk_read={chunk_read} cmd={upload_command_header}"
+                )
+                self.session.headers["X-Goog-Upload-Command"] = upload_command_header
+                self.session.headers["X-Goog-Upload-Offset"] = str(cur_offset)
+                res_2 = self.session.post(upload_url, chunk)
+
+                if res_2.status_code != 200:
+                    logger.error(
+                        f"Failed uploading chunk: {res_2.status_code} {res_2.content}"
+                    )
+
+                    self.session.headers["Content-Length"] = "0"
+                    self.session.headers["X-Goog-Upload-Command"] = "query"
+
+                    self.session.post(upload_url)
+
+                    upload_status = self.session.headers["X-Goog-Upload-Status"]
+                    size_received = int(
+                        self.session.headers["X-Goog-Upload-Size-Received"]
+                    )
+
+                    if upload_status != "active":
+                        raise Exception("Upload is no longer active")
+
+                    logger.debug(f"Adjusted seek to {size_received}")
+                    file_obj.seek(size_received)
+
+                if is_last_chunk:
+                    upload_token = res_2.content.decode()
+
+                cur_offset += chunk_read
+                chunk = next_chunk
+
+        return upload_token

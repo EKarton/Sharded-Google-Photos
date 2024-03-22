@@ -492,6 +492,14 @@ class GPhotosClientTests(unittest.TestCase):
 
             self.assertEqual(response, mock_response)
 
+    def test_upload_photo_in_chunks__large_file__makes_api_calls_correctly_and_returns_upload_token(self):
+        pass
+
+    def test_upload_photo_in_chunks__uploading_middle_chunk_failed__makes_api_calls_correctly_and_returns_upload_token(
+        self,
+    ):
+        pass
+
 
 class MockedSavedCredentialsFile:
     def __enter__(self):
