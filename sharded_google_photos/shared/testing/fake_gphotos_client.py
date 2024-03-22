@@ -304,10 +304,6 @@ class FakeGPhotosClient(GPhotosClient):
             self.id, upload_tokens, album_id
         )
 
-    def upload_photo(self, photo_file_path, file_name):
-        self.__check_authentication__()
-        return self.repository.upload_photo(self.id, photo_file_path, file_name)
-
     def search_for_media_items(self, album_id=None, filters=None, order_by=None):
         self.__check_authentication__()
         return self.repository.search_for_media_items(
@@ -319,3 +315,11 @@ class FakeGPhotosClient(GPhotosClient):
         return self.repository.update_album(
             self.id, album_id, new_title, new_cover_media_item_id
         )
+
+    def upload_photo(self, photo_file_path, file_name):
+        self.__check_authentication__()
+        return self.repository.upload_photo(self.id, photo_file_path, file_name)
+
+    def upload_photo_in_chunks(self, photo_file_path, file_name):
+        self.__check_authentication__()
+        return self.repository.upload_photo(self.id, photo_file_path, file_name)
