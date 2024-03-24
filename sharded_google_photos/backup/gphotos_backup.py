@@ -163,7 +163,7 @@ class GPhotosBackup:
 
                 if best_client_idx is None:
                     raise Exception(
-                        f"Can't find space to create new album {album_title}. Should clean g accounts"
+                        f"Can't find space to create new album {album_title}"
                     )
 
                 client_idx = best_client_idx
