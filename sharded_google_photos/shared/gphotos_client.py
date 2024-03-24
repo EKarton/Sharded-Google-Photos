@@ -112,7 +112,6 @@ class GPhotosClient:
         params = {"excludeNonAppCreatedData": exclude_non_app_created_data}
         albums = []
         while True:
-            print(uri, params)
             response = self.session.get(uri, params=params)
 
             if response.status_code != 200:
@@ -121,7 +120,6 @@ class GPhotosClient:
                 )
 
             response_body = response.json()
-            logging.debug(f"Server response from fetching albums:{response_body}")
 
             if "sharedAlbums" not in response_body:
                 break
@@ -142,7 +140,6 @@ class GPhotosClient:
         params = {"excludeNonAppCreatedData": exclude_non_app_created_data}
         albums = []
         while True:
-            print(uri, params)
             response = self.session.get(uri, params=params)
 
             if response.status_code != 200:
@@ -151,7 +148,6 @@ class GPhotosClient:
                 )
 
             response_body = response.json()
-            logging.debug(f"Server response from fetching albums:{response_body}")
 
             if "albums" not in response_body:
                 break
@@ -178,7 +174,6 @@ class GPhotosClient:
             )
 
         response_body = response.json()
-        logging.debug(f"Server response from making album:{response_body}")
         return response_body
 
     def share_album(self, album_id, is_collaborative=False, is_commentable=False):
