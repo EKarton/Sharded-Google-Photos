@@ -27,42 +27,15 @@ class GPhotosBackup:
         shared_album_repository.setup()
         logger.debug("Step 3: Found existing shared albums")
 
+        assigned_albums = self.get_client_and_album_for_chunked_diffs(
+            shared_album_repository, chunked_new_diffs
+        )
+        logger.debug("Step 4: Assigned albums to diffs")
+
         # Handle each folder one by one
-        shared_album_uris = []
         for album_title in chunked_new_diffs:
-
-            # Find the album and the client for the album title
-            album = None
-            client = None
-            if shared_album_repository.contains_album_title(album_title):
-                album = shared_album_repository.get_album_from_title(album_title)
-                client = self.gphoto_clients[album["client_idx"]]
-            else:
-                logger.debug(f"Cannot find album {album_title}")
-                new_storage_needed = self.get_new_storage_needed(
-                    chunked_new_diffs[album_title].get("+", [])
-                )
-                client_idx = self.find_best_client_for_new_album(new_storage_needed)
-
-                if client_idx is None:
-                    raise Exception(
-                        f"Can't find space to create new album {album_title}"
-                    )
-
-                logger.debug(
-                    f"Needs {new_storage_needed} bytes - to client idx {client_idx}"
-                )
-
-                # Create a new album and store its shareable url
-                album = shared_album_repository.create_shared_album(
-                    client_idx, album_title
-                )
-                client = self.gphoto_clients[client_idx]
-                shared_album_uris.append(album["shareInfo"]["shareableUrl"])
-
-            logger.debug(
-                f"Step 4: Found album for {album_title}: client {album['client_idx']}"
-            )
+            album = assigned_albums[album_title]["album"]
+            client = self.gphoto_clients[assigned_albums[album_title]["client_idx"]]
 
             # Find the existing photos that are in that album
             media_item_repository = MediaItemRepository(album["id"], client)
@@ -109,7 +82,13 @@ class GPhotosBackup:
                 )
                 logger.debug("Step 10: Unshared empty album")
 
-        return shared_album_uris
+        # Get a list of all the new albums made and its urls
+        new_shared_album_urls = [
+            assigned_album["album"]["shareInfo"]["shareableUrl"]
+            for assigned_album in assigned_albums.values()
+            if assigned_album["is_new_album"]
+        ]
+        return new_shared_album_urls
 
     def add_new_metadata(self, diffs):
         new_diffs = []
@@ -131,32 +110,86 @@ class GPhotosBackup:
             )
         return new_diffs
 
-    def get_new_storage_needed(self, diffs):
-        return sum([diff["file_size_in_bytes"] for diff in diffs])
+    def get_client_and_album_for_chunked_diffs(
+        self, shared_album_repository, chunked_new_diffs
+    ):
+        results = {}
 
-    def find_best_client_for_new_album(self, new_storage_needed):
-        max_remaining_space = float("-inf")
-        best_client_idx = None
-
-        for client_idx in range(len(self.gphoto_clients)):
-            client = self.gphoto_clients[client_idx]
-            storage_quota = client.get_storage_quota()
-
+        # Get the amount of space reamining per client
+        client_space_remaining = []
+        for i in range(len(self.gphoto_clients)):
+            storage_quota = self.gphoto_clients[i].get_storage_quota()
             max_limit = int(storage_quota["limit"])
             usage = int(storage_quota["usage"])
             remaining_space = max_limit - usage
-            logger.debug(
-                f"Remaining space for {remaining_space} {client_idx} {storage_quota}"
+
+            client_space_remaining.append(remaining_space)
+
+        for album_title in chunked_new_diffs:
+            # Find the album and the client for the album title
+            album = None
+            is_new_album = False
+            client_idx = None
+
+            new_storage_needed = self.get_new_storage_needed(
+                chunked_new_diffs[album_title].get("+", [])
             )
 
-            if new_storage_needed > remaining_space:
-                continue
+            if shared_album_repository.contains_album_title(album_title):
+                album = shared_album_repository.get_album_from_title(album_title)
+                client_idx = album["client_idx"]
 
-            if max_remaining_space < remaining_space:
-                max_remaining_space = remaining_space
-                best_client_idx = client_idx
+                if client_space_remaining[client_idx] - new_storage_needed <= 0:
+                    raise Exception(f"Need to move {album_title} out of {client_idx}")
 
-        return best_client_idx
+                client_space_remaining[client_idx] -= new_storage_needed
+            else:
+                print(f"Cannot find album {album_title}")
+                logger.debug(f"Cannot find album {album_title}")
+
+                # Get the best client to allocate to
+                max_remaining_space = float("-inf")
+                best_client_idx = None
+
+                for client_idx in range(len(self.gphoto_clients)):
+                    remaining_space = client_space_remaining[client_idx]
+
+                    if new_storage_needed > remaining_space:
+                        continue
+
+                    if max_remaining_space < remaining_space:
+                        max_remaining_space = remaining_space
+                        best_client_idx = client_idx
+
+                if best_client_idx is None:
+                    raise Exception(
+                        f"Can't find space to create new album {album_title}"
+                    )
+
+                client_idx = best_client_idx
+                client_space_remaining[client_idx] -= new_storage_needed
+
+                logger.debug(f"Assigned album {album_title} to {client_idx}")
+
+                # Create a new album and store its shareable url
+                album = shared_album_repository.create_shared_album(
+                    client_idx, album_title
+                )
+                is_new_album = True
+
+            results[album_title] = {
+                "album": album,
+                "client_idx": client_idx,
+                "is_new_album": is_new_album,
+            }
+
+            print(f"Step 4: Found album for {album_title}: client {client_idx}")
+            logger.debug(f"Step 4: Found album for {album_title}: client {client_idx}")
+
+        return results
+
+    def get_new_storage_needed(self, diffs):
+        return sum([diff["file_size_in_bytes"] for diff in diffs])
 
     def add_uploaded_photos_safely(self, media_item_repository, upload_tokens):
         MAX_UPLOAD_TOKEN_LENGTH_PER_CALL = 50
