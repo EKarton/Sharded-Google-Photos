@@ -27,7 +27,7 @@ class GPhotosBackup:
         shared_album_repository.setup()
         logger.debug("Step 3: Found existing shared albums")
 
-        assigned_albums = self.get_client_and_album_for_chunked_diffs(
+        assigned_albums = self.get_album_assignment_for_chunked_diffs(
             shared_album_repository, chunked_new_diffs
         )
         logger.debug("Step 4: Assigned albums to diffs")
@@ -110,86 +110,99 @@ class GPhotosBackup:
             )
         return new_diffs
 
-    def get_client_and_album_for_chunked_diffs(
+    def get_album_assignment_for_chunked_diffs(
         self, shared_album_repository, chunked_new_diffs
     ):
         results = {}
+        space_remaining = [self.get_remaining_storage(c) for c in self.gphoto_clients]
 
-        # Get the amount of space reamining per client
-        client_space_remaining = []
-        for i in range(len(self.gphoto_clients)):
-            storage_quota = self.gphoto_clients[i].get_storage_quota()
-            max_limit = int(storage_quota["limit"])
-            usage = int(storage_quota["usage"])
-            remaining_space = max_limit - usage
-
-            client_space_remaining.append(remaining_space)
-
+        # Go through all of the albums that already exist
         for album_title in chunked_new_diffs:
-            # Find the album and the client for the album title
-            album = None
-            is_new_album = False
-            client_idx = None
+            if not shared_album_repository.contains_album_title(album_title):
+                continue
 
-            new_storage_needed = self.get_new_storage_needed(
+            # add_diffs = chunked_new_diffs[album_title].get("+", [])
+            space_needed = self.get_new_storage_needed(
                 chunked_new_diffs[album_title].get("+", [])
             )
 
-            if shared_album_repository.contains_album_title(album_title):
-                album = shared_album_repository.get_album_from_title(album_title)
-                client_idx = album["client_idx"]
+            album = shared_album_repository.get_album_from_title(album_title)
+            client_idx = album["client_idx"]
 
-                if client_space_remaining[client_idx] - new_storage_needed <= 0:
-                    raise Exception(f"Need to move {album_title} out of {client_idx}")
+            if space_remaining[client_idx] - space_needed <= 0:
+                raise Exception(f"Need to move {album_title} out of {client_idx}")
 
-                client_space_remaining[client_idx] -= new_storage_needed
-            else:
-                print(f"Cannot find album {album_title}")
-                logger.debug(f"Cannot find album {album_title}")
-
-                # Get the best client to allocate to
-                max_remaining_space = float("-inf")
-                best_client_idx = None
-
-                for client_idx in range(len(self.gphoto_clients)):
-                    remaining_space = client_space_remaining[client_idx]
-
-                    if new_storage_needed > remaining_space:
-                        continue
-
-                    if max_remaining_space < remaining_space:
-                        max_remaining_space = remaining_space
-                        best_client_idx = client_idx
-
-                if best_client_idx is None:
-                    raise Exception(
-                        f"Can't find space to create new album {album_title}"
-                    )
-
-                client_idx = best_client_idx
-                client_space_remaining[client_idx] -= new_storage_needed
-
-                logger.debug(f"Assigned album {album_title} to {client_idx}")
-
-                # Create a new album and store its shareable url
-                album = shared_album_repository.create_shared_album(
-                    client_idx, album_title
-                )
-                is_new_album = True
-
+            space_remaining[client_idx] -= space_needed
             results[album_title] = {
                 "album": album,
                 "client_idx": client_idx,
-                "is_new_album": is_new_album,
+                "is_new_album": False,
             }
 
-            print(f"Step 4: Found album for {album_title}: client {client_idx}")
-            logger.debug(f"Step 4: Found album for {album_title}: client {client_idx}")
+        # Go through all the albums that do not exist yet
+        for album_title in chunked_new_diffs:
+            if shared_album_repository.contains_album_title(album_title):
+                continue
+
+            add_diffs = chunked_new_diffs[album_title].get("+", [])
+            space_needed = self.get_new_storage_needed(add_diffs)
+
+            # Get the best client to allocate to
+            best_client_idx = self.find_best_client_for_new_album(
+                space_remaining, space_needed
+            )
+
+            if best_client_idx is None:
+                raise Exception(f"Can't find space to create new album {album_title}")
+
+            client_idx = best_client_idx
+            space_remaining[client_idx] -= space_needed
+            results[album_title] = {
+                "album": None,
+                "client_idx": client_idx,
+                "is_new_album": True,
+            }
+
+        logger.debug(f"New client spaces remaining: {space_remaining}")
+
+        # Create albums that are not created yet
+        for album_title in chunked_new_diffs:
+            if not results[album_title]["is_new_album"]:
+                continue
+
+            results[album_title]["album"] = shared_album_repository.create_shared_album(
+                results[album_title]["client_idx"], album_title
+            )
 
         return results
 
     def get_new_storage_needed(self, diffs):
         return sum([diff["file_size_in_bytes"] for diff in diffs])
+
+    def get_remaining_storage(self, gphoto_client):
+        storage_quota = gphoto_client.get_storage_quota()
+        max_limit = int(storage_quota["limit"])
+        usage = int(storage_quota["usage"])
+        return max_limit - usage
+
+    def find_best_client_for_new_album(self, space_remaining, space_needed):
+        max_remaining_space = float("-inf")
+        best_client_idx = None
+
+        for client_idx in range(len(self.gphoto_clients)):
+            remaining_space = space_remaining[client_idx]
+
+            if space_needed > remaining_space:
+                continue
+
+            if remaining_space <= 0:
+                continue
+
+            if max_remaining_space < remaining_space:
+                max_remaining_space = remaining_space
+                best_client_idx = client_idx
+
+        return best_client_idx
 
     def add_uploaded_photos_safely(self, media_item_repository, upload_tokens):
         MAX_UPLOAD_TOKEN_LENGTH_PER_CALL = 50

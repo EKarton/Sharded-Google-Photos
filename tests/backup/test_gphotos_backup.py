@@ -362,6 +362,72 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(items_in_shared_albums_1b), 2)
             self.assertEqual(len(items_in_shared_albums_2), 2)
 
+    def test_backup__add_existing_photos_and_create_new_albums__creates_albums_correctly(
+        self,
+    ):
+        repo = FakeItemsRepository()
+        client_1 = FakeGPhotosClient(repository=repo, max_num_photos=5)
+        client_2 = FakeGPhotosClient(repository=repo, max_num_photos=2)
+        client_1.authenticate()
+        client_2.authenticate()
+        backup_client = GPhotosBackup([client_1, client_2])
+
+        with patch("os.stat") as os_stat:
+            os_stat.return_value.st_size = 1
+
+            album_1_id = client_1.create_album("B")["id"]
+            client_1.share_album(album_1_id)
+            for i in range(2):
+                upload_token = client_1.upload_photo(f"./B/{i}.jpg", f"{i}.jpg")
+                client_1.add_uploaded_photos_to_gphotos([upload_token], album_1_id)
+
+            diffs = [
+                {"modifier": "+", "path": "./B/2.jpg"},
+                {"modifier": "+", "path": "./B/3.jpg"},
+                {"modifier": "+", "path": "./A/1.jpg"},
+                {"modifier": "+", "path": "./A/2.jpg"},
+            ]
+            shared_album_uris = backup_client.backup(diffs)
+
+            # Test assertions: Check the output of newly created shared albums
+            self.assertEqual(len(shared_album_uris), 1)
+
+            # Test assertions: Check shared albums
+            shared_albums_1 = client_1.list_shared_albums()
+            shared_albums_2 = client_2.list_shared_albums()
+            self.assertEqual(len(shared_albums_1), 1)
+            self.assertEqual(len(shared_albums_2), 1)
+            self.assertEqual(shared_albums_1[0]["title"], "B")
+            self.assertEqual(shared_albums_2[0]["title"], "A")
+
+            # Test assertions: Check regular albums
+            self.assertEqual(len(client_1.list_albums()), 0)
+            self.assertEqual(len(client_2.list_albums()), 0)
+
+            # Test assertions: Check media items in client 1 are the old pics
+            media_items_1 = client_1.search_for_media_items()
+            self.assertEqual(len(media_items_1), 4)
+            self.assertEqual(media_items_1[0]["filename"], "0.jpg")
+            self.assertEqual(media_items_1[1]["filename"], "1.jpg")
+            self.assertEqual(media_items_1[2]["filename"], "2.jpg")
+            self.assertEqual(media_items_1[3]["filename"], "3.jpg")
+
+            # Test assertions: Check media items in client 2 are the new pics
+            media_items_2 = client_2.search_for_media_items()
+            self.assertEqual(len(media_items_2), 2)
+            self.assertEqual(media_items_2[0]["filename"], "1.jpg")
+            self.assertEqual(media_items_2[1]["filename"], "2.jpg")
+
+            # Test assertions: Check media items in that shared album
+            items_in_shared_albums_1 = client_1.search_for_media_items(
+                shared_albums_1[0]["id"]
+            )
+            items_in_shared_albums_2 = client_2.search_for_media_items(
+                shared_albums_2[0]["id"]
+            )
+            self.assertEqual(len(items_in_shared_albums_1), 4)
+            self.assertEqual(len(items_in_shared_albums_2), 2)
+
     def test_backup__add_photos_in_existing_album__puts_new_photos_in_existing_albums(
         self,
     ):
