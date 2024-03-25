@@ -47,7 +47,7 @@ It works like this:
 
     3. Photos `1.jpg`, and `2.jpg` will be in the `Archives/Photos/2022/Trip to California` album.
 
-    4. Photos `1.jpg`, and `2.jpg` will be in the `Archives/Photos/2022/Trip to Toronto` album.
+    4. Photos `3.jpg`, and `4.jpg` will be in the `Archives/Photos/2022/Trip to Toronto` album.
 
     3. The url to those new albums will be in `new_album_uris` that you can share to.
 
