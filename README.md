@@ -44,7 +44,7 @@ It works like this:
         
         * Photos `1.jpg`, `2.jpg`, and `3.jpg` will be in that album.
         
-        * The url to that album will be in `new_album_uris`.
+        * The url to that album will be in `new_album_uris` that you can share to.
 
 4. To update a file in a folder, run the following:
 
