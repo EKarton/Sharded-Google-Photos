@@ -38,11 +38,11 @@ new_album_uris = backup_client.backup([
 print(new_album_uris)
 ```
 
-    What will happen is that it will:
+What will happen is that it will:
 
-        a. A shared read-only album `Archives/Photos/2022/Trip to California` will be made in some Google Photos account with the most amount of space available
-        b. Photos `1.jpg`, `2.jpg`, and `3.jpg` will be in that album
-        c. The url to that album will be in `new_album_uris`.
+    a. A shared read-only album `Archives/Photos/2022/Trip to California` will be made in some Google Photos account with the most amount of space available
+    b. Photos `1.jpg`, `2.jpg`, and `3.jpg` will be in that album
+    c. The url to that album will be in `new_album_uris`.
 
 4. To update a file in a folder, run the following:
 
