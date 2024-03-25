@@ -85,25 +85,25 @@ It works like this:
 
 2. Install dependencies by running:
 
-```
+```bash
 poetry install
 ```
 
 3. Run the app in CLI mode by running:
 
-```
+```bash
 poetry run python sharded_google_photos/main.py
 ```
 
 4. To lint your code, run:
 
-```
+```bash
 poetry run flake8 && poetry run black sharded_google_photos/
 ```
 
 5. To run tests and code coverage, run:
 
-```
+```bash
 poetry run coverage run -m pytest && poetry run coverage report -m
 ```
 
@@ -111,19 +111,19 @@ poetry run coverage run -m pytest && poetry run coverage report -m
 
     1. First, set your PyPI api token to Poetry
 
-        ```
+        ```bash
         poetry config pypi-token.pypi <YOUR_API_TOKEN>
         ```
 
     2. Then, build the app by running:
 
-        ```
+        ```bash
         poetry build
         ```
 
     3. Finally, publish the app by running:
 
-        ```
+        ```bash
         poetry publish
         ```
 
