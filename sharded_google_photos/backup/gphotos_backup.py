@@ -40,7 +40,7 @@ class GPhotosBackup:
             # Find the existing photos that are in that album
             media_item_repository = MediaItemRepository(album["id"], client)
             media_item_repository.setup()
-            logger.debug("Step 5: Find the existing photos that are in that album")
+            logger.debug(f"Step 5: Find the existing photos in {album_title}")
 
             # Remove the files to delete out of the album
             media_ids_to_remove = set()
@@ -54,7 +54,9 @@ class GPhotosBackup:
                     media_ids_to_remove.add(media_item["id"])
 
             media_item_repository.remove_media_items(list(media_ids_to_remove))
-            logger.debug(f"Step 6: Deleted files out of album: {media_ids_to_remove}")
+            logger.debug(
+                f"Step 6: Removing {len(media_ids_to_remove)} photos from {album_title}"
+            )
 
             # Upload the additional files
             uploader = GPhotosUploader(client)
@@ -63,11 +65,13 @@ class GPhotosBackup:
                 file_paths=[a["abs_path"] for a in added_diffs],
                 file_names=[a["file_name"] for a in added_diffs],
             )
-            logger.debug(f"Step 7: Uploaded new files: {upload_tokens}")
+            logger.debug(
+                f"Step 7: Uploaded {len(upload_tokens)} photos to {album_title}"
+            )
 
             # Attach them to gphotos album in chunks of 50
             self.add_uploaded_photos_safely(media_item_repository, upload_tokens)
-            logger.debug("Step 8: Added uploaded photos to album")
+            logger.debug(f"Step 8: Added uploaded photos to {album_title}")
 
             # Rename the album if it's currently empty
             if media_item_repository.get_num_media_items() == 0:
@@ -75,12 +79,12 @@ class GPhotosBackup:
                 new_album = shared_album_repository.rename_album(
                     album["id"], new_album_name
                 )
-                logger.debug("Step 9: Renamed empty album to be deleted")
+                logger.debug(f"Step 9: Renamed empty album {album_title} to be deleted")
 
                 self.gphoto_clients[new_album["client_idx"]].unshare_album(
                     new_album["id"]
                 )
-                logger.debug("Step 10: Unshared empty album")
+                logger.debug(f"Step 10: Unshared empty album {album_title}")
 
         # Get a list of all the new albums made and its urls
         new_shared_album_urls = [
