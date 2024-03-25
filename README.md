@@ -85,27 +85,27 @@ It works like this:
 
 2. Install dependencies by running:
 
-```bash
-poetry install
-```
+    ```bash
+    poetry install
+    ```
 
 3. Run the app in CLI mode by running:
 
-```bash
-poetry run python sharded_google_photos/main.py
-```
+    ```bash
+    poetry run python sharded_google_photos/main.py
+    ```
 
 4. To lint your code, run:
 
-```bash
-poetry run flake8 && poetry run black sharded_google_photos/
-```
+    ```bash
+    poetry run flake8 && poetry run black sharded_google_photos/
+    ```
 
 5. To run tests and code coverage, run:
 
-```bash
-poetry run coverage run -m pytest && poetry run coverage report -m
-```
+    ```bash
+    poetry run coverage run -m pytest && poetry run coverage report -m
+    ```
 
 6. To publish your app:
 
