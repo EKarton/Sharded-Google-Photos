@@ -6,9 +6,11 @@ Running out of space in your Google Photos account? Wish you can upload an unlim
 
 It works like this:
 
-1. Install the package by running `pip install sharded-google-photos`.
+1. Let's say you have three Google Accounts.
 
-2. Import the following code in your `main.py` app:
+2. Install the package by running `pip install sharded-google-photos`.
+
+3. Import the following code in your `main.py` app:
 
     ```python
     from sharded_google_photos.backup.gphotos_backup import GPhotosBackup
@@ -25,7 +27,7 @@ It works like this:
     backup_client = GPhotosBackup(clients)
     ```
 
-3. To upload a set of pictures in a folder, run the following:
+4. To upload four photos from two folders, run the following:
 
     ```python
     new_album_uris = backup_client.backup([
@@ -51,7 +53,7 @@ It works like this:
 
     3. The url to those new albums will be in `new_album_uris` that you can share to.
 
-4. To update a file in a folder, run the following:
+5. To update a file in a folder, run the following:
 
     ```python
     backup_client.backup([
@@ -62,7 +64,7 @@ It works like this:
     ])
     ```
 
-5. To delete a file in a folder, run the following:
+6. To delete a file in a folder, run the following:
 
     ```python
     backup_client.backup([
