@@ -1,8 +1,10 @@
 # Sharded-Google-Photos
 
-A tool to shard photos across multiple Google Photo accounts
+## Description
 
-## Using the Library in your projects
+Running out of space in your Google Photos account? Wish you can upload an unlimited number of photos on Google Photos? Now you can! With this Python library, you can upload photos to many Google Accounts distributively and then share those albums to your main Google Photos account.
+
+It works like this:
 
 1. Install the package by running `pip install sharded-google-photos`.
 
