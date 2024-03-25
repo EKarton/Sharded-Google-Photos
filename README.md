@@ -43,7 +43,7 @@ It works like this:
 
     1. A shared read-only album `Archives/Photos/2022/Trip to California` will be made in some Google Photos account with the most amount of space available.
 
-    2. A shared read-only album `Archives/Photos/2022/Trip to Toronto` will be made in some Google Photos account with the most amount of space available.
+    2. A shared read-only album `Archives/Photos/2022/Trip to Toronto` will be made in some Google Photos account with the second most amount of space available.
 
     3. Photos `1.jpg`, and `2.jpg` will be in the `Archives/Photos/2022/Trip to California` album.
 
