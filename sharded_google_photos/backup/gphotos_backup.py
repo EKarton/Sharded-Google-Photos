@@ -127,7 +127,6 @@ class GPhotosBackup:
             if not shared_album_repository.contains_album_title(album_title):
                 continue
 
-            # add_diffs = chunked_new_diffs[album_title].get("+", [])
             space_needed = self.get_new_storage_needed(
                 chunked_new_diffs[album_title].get("+", [])
             )
