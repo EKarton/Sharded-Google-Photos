@@ -77,7 +77,7 @@ It works like this:
         cleaner.cleanup()
     ```
 
-    After running that command, it will put all of the albumless photos into an album called "Trash", and you can log into Google Photos and delete those photos from your account manually.
+    After running that script, it will put all of the albumless photos into an album called "Trash", and you can log into Google Photos and delete those photos from your account manually.
 
 ## Getting Started to Contribute
 
