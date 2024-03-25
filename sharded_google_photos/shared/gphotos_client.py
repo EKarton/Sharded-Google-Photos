@@ -289,7 +289,6 @@ class GPhotosClient:
                 )
 
             response_body = response.json()
-            logging.debug(f"Server response from fetching albums:{response_body}")
 
             if "mediaItems" not in response_body:
                 break
