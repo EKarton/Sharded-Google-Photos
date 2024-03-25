@@ -32,7 +32,8 @@ It works like this:
         {
             "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
             "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/2.jpg",
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/3.jpg",
+            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/3.jpg",
+            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/4.jpg",
         }
     ])
     print(new_album_uris)
@@ -42,9 +43,13 @@ It works like this:
 
     1. A shared read-only album `Archives/Photos/2022/Trip to California` will be made in some Google Photos account with the most amount of space available.
 
-    2. Photos `1.jpg`, `2.jpg`, and `3.jpg` will be in that album.
+    2. A shared read-only album `Archives/Photos/2022/Trip to Toronto` will be made in some Google Photos account with the most amount of space available.
 
-    3. The url to that album will be in `new_album_uris` that you can share to.
+    3. Photos `1.jpg`, and `2.jpg` will be in the `Archives/Photos/2022/Trip to California` album.
+
+    4. Photos `1.jpg`, and `2.jpg` will be in the `Archives/Photos/2022/Trip to Toronto` album.
+
+    3. The url to those new albums will be in `new_album_uris` that you can share to.
 
 4. To update a file in a folder, run the following:
 
