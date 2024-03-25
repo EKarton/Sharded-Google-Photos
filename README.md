@@ -67,7 +67,7 @@ It works like this:
     ])
     ```
 
-    Note: it is not possible for the Google Photos API to actually delete a photo from Google Photos. Instead, you can clean your Google Photos Account by putting all album-less photos into a "Trash" album by running the following commands:
+    Note: it is not possible for the Google Photos API to actually delete a photo from Google Photos. Instead, you can clean your Google Photo accounts by putting all album-less photos into a "Trash" album by running the following commands:
 
     ```python
     from sharded_google_photos.cleanup.gphotos_cleaner import GPhotosCleaner
