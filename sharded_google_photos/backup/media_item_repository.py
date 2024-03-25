@@ -67,8 +67,4 @@ class MediaItemRepository:
             self.media_id_to_obj[media_item["id"]] = media_item
             self.file_name_to_media_ids[media_item["filename"]] = media_item["id"]
 
-        print(self.media_id_to_obj)
-        print()
-        print(self.file_name_to_media_ids)
-
         logger.debug(f"Added new media items: {media_items}")

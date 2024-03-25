@@ -120,6 +120,8 @@ class GPhotosBackup:
         results = {}
         space_remaining = [self.get_remaining_storage(c) for c in self.gphoto_clients]
 
+        logger.debug(f"Current space remaining: {space_remaining}")
+
         # Go through all of the albums that already exist
         for album_title in chunked_new_diffs:
             if not shared_album_repository.contains_album_title(album_title):
@@ -142,6 +144,8 @@ class GPhotosBackup:
                 "client_idx": client_idx,
                 "is_new_album": False,
             }
+
+        logger.debug("Assigned existing albums to clients")
 
         # Go through all the albums that do not exist yet
         for album_title in chunked_new_diffs:
@@ -167,6 +171,7 @@ class GPhotosBackup:
                 "is_new_album": True,
             }
 
+        logger.debug("Assigned new albums to clients")
         logger.debug(f"New client spaces remaining: {space_remaining}")
 
         # Create albums that are not created yet
@@ -177,6 +182,8 @@ class GPhotosBackup:
             results[album_title]["album"] = shared_album_repository.create_shared_album(
                 results[album_title]["client_idx"], album_title
             )
+
+        logger.debug("Created new albums")
 
         return results
 
