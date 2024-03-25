@@ -27,9 +27,6 @@ class SharedAlbumRepository:
                 self.album_id_to_album[album_id] = album
                 self.album_title_to_album_id[album_title] = album_id
 
-        logger.debug(f"Albums: {self.album_id_to_album}")
-        logger.debug(f"Album title to album index: {self.album_title_to_album_id}")
-
     def contains_album_title(self, title):
         return title in self.album_title_to_album_id
 
