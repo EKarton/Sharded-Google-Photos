@@ -39,8 +39,11 @@ It works like this:
     ```
 
     What will happen is that it will:
+
     1. A shared read-only album `Archives/Photos/2022/Trip to California` will be made in some Google Photos account with the most amount of space available.
+
     2. Photos `1.jpg`, `2.jpg`, and `3.jpg` will be in that album.
+
     3. The url to that album will be in `new_album_uris` that you can share to.
 
 4. To update a file in a folder, run the following:
