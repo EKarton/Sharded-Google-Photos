@@ -1,10 +1,12 @@
 import logging
 
+from sharded_google_photos.shared.gphotos_client import GPhotosClient
+
 logger = logging.getLogger(__name__)
 
 
 class SharedAlbumRepository:
-    def __init__(self, gphoto_clients):
+    def __init__(self, gphoto_clients: list[GPhotosClient]):
         self.gphoto_clients = gphoto_clients
 
         self.album_id_to_album = {}
@@ -15,7 +17,9 @@ class SharedAlbumRepository:
         self.album_title_to_album_id = {}
 
         for client_idx in range(len(self.gphoto_clients)):
-            client_albums = self.gphoto_clients[client_idx].list_shared_albums()
+            client_albums = (
+                self.gphoto_clients[client_idx].albums().list_shared_albums()
+            )
 
             for client_album_idx in range(len(client_albums)):
                 album = client_albums[client_album_idx]
@@ -41,11 +45,11 @@ class SharedAlbumRepository:
         if title in self.album_title_to_album_id:
             raise Exception(f"Album {title} already exists")
 
-        new_album = self.gphoto_clients[client_idx].create_album(title)
+        new_album = self.gphoto_clients[client_idx].albums().create_album(title)
         new_album["client_idx"] = client_idx
 
         new_album_id = new_album["id"]
-        share_info = self.gphoto_clients[client_idx].share_album(new_album_id)
+        share_info = self.gphoto_clients[client_idx].albums().share_album(new_album_id)
         new_album["shareInfo"] = share_info["shareInfo"]
 
         self.album_id_to_album[new_album_id] = new_album
@@ -63,7 +67,9 @@ class SharedAlbumRepository:
         old_title = old_album["title"]
         client_idx = old_album["client_idx"]
 
-        new_album = self.gphoto_clients[client_idx].update_album(album_id, new_title)
+        new_album = (
+            self.gphoto_clients[client_idx].albums().update_album(album_id, new_title)
+        )
         new_album["client_idx"] = client_idx
 
         del self.album_id_to_album[album_id]

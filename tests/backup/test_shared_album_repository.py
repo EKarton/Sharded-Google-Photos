@@ -3,16 +3,21 @@ from unittest.mock import patch
 
 from sharded_google_photos.backup.shared_album_repository import SharedAlbumRepository
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
-from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
+from sharded_google_photos.shared.testing.fake_gphotos_album_client import (
+    FakeGPhotosAlbumClient,
+)
+from sharded_google_photos.shared.testing.fake_gphotos_repository import (
+    FakeItemsRepository,
+)
 
 
 class SharedAlbumRepositoryTests(unittest.TestCase):
     def test_setup__with_existing_albums__indexes_shared_albums_correctly(self):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
+        album = client.albums().create_album("Photos/2011")
         album_id = album["id"]
-        client.share_album(album["id"])
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -23,8 +28,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     def test_contains_album_title__with_existing_albums__returns_correct_value(self):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -37,8 +42,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     ):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -50,8 +55,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     def test_contains_album_title__on_unknown_album_title__returns_false(self):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -62,8 +67,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     def test_get_album_from_title__with_existing_albums__returns_correct_value(self):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -76,8 +81,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     ):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -91,8 +96,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     ):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -109,8 +114,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
 
         self.assertEqual(shared_album["title"], "Photos/2011")
         self.assertIsNotNone(shared_album["shareInfo"])
-        shared_albums = client.list_shared_albums()
-        unshared_albums = client.list_albums()
+        shared_albums = client.albums().list_shared_albums()
+        unshared_albums = client.albums().list_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2011")
         self.assertEqual(len(unshared_albums), 0)
@@ -118,8 +123,8 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
     def test_create_shared_album__with_duplicate_title__throws_exception(self):
         client = FakeGPhotosClient(FakeItemsRepository())
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
         repo = SharedAlbumRepository([client])
         repo.setup()
@@ -178,7 +183,7 @@ class SharedAlbumRepositoryTests(unittest.TestCase):
 
         self.assertEqual(album["id"], new_album["id"])
         self.assertEqual(new_album["title"], "Photos/2022")
-        shared_albums = client.list_shared_albums()
+        shared_albums = client.albums().list_shared_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2022")
 
@@ -267,9 +272,9 @@ class TrackFetchedListSharedAlbumCalls:
 
     def __enter__(self):
         self.fake_list_shared_albums = patch.object(
-            FakeGPhotosClient,
+            FakeGPhotosAlbumClient,
             "list_shared_albums",
-            wraps=self.client.list_shared_albums,
+            wraps=self.client.albums().list_shared_albums,
         )
         return self.fake_list_shared_albums.__enter__()
 

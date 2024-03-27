@@ -1,16 +1,18 @@
 import os
 import logging
 
-from sharded_google_photos.backup.diffs_splitter import diffs_splitter
-from sharded_google_photos.backup.shared_album_repository import SharedAlbumRepository
-from sharded_google_photos.backup.media_item_repository import MediaItemRepository
-from sharded_google_photos.backup.gphotos_uploader import GPhotosUploader
+from sharded_google_photos.shared.gphotos_client import GPhotosClient
+
+from .diffs_splitter import diffs_splitter
+from .shared_album_repository import SharedAlbumRepository
+from .media_item_repository import MediaItemRepository
+from .gphotos_uploader import GPhotosUploader
 
 logger = logging.getLogger(__name__)
 
 
 class GPhotosBackup:
-    def __init__(self, gphoto_clients):
+    def __init__(self, gphoto_clients: list[GPhotosClient]):
         self.gphoto_clients = gphoto_clients
 
     def backup(self, diffs):
@@ -81,7 +83,7 @@ class GPhotosBackup:
                 )
                 logger.debug(f"Step 9: Renamed empty album {album_title} to be deleted")
 
-                self.gphoto_clients[new_album["client_idx"]].unshare_album(
+                self.gphoto_clients[new_album["client_idx"]].albums().unshare_album(
                     new_album["id"]
                 )
                 logger.debug(f"Step 10: Unshared empty album {album_title}")

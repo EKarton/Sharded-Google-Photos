@@ -39,19 +39,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 1)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 0)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -59,7 +59,7 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[2]["filename"], "20110902_190901.jpeg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1 = client_1.search_for_media_items(
+            items_in_shared_albums_1 = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 3)
@@ -114,36 +114,36 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 1)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 1)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
             self.assertEqual(shared_albums_2[0]["title"], "Photos/2011/At Toronto")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items in client 1 are the old pics
-            media_items_1 = client_1.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
             self.assertEqual(media_items_1[1]["filename"], "20110902_190900.jpeg")
             self.assertEqual(media_items_1[2]["filename"], "20110902_190901.jpeg")
 
             # Test assertions: Check media items in client 2 are the new pics
-            media_items_2 = client_2.search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_2), 3)
             self.assertEqual(media_items_2[0]["filename"], "20110720_213057.jpg")
             self.assertEqual(media_items_2[1]["filename"], "20110720_213146.jpg")
             self.assertEqual(media_items_2[2]["filename"], "20110720_213147.jpg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1 = client_1.search_for_media_items(
+            items_in_shared_albums_1 = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
-            items_in_shared_albums_2 = client_2.search_for_media_items(
+            items_in_shared_albums_2 = client_2.media_items().search_for_media_items(
                 shared_albums_2[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 3)
@@ -242,36 +242,36 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 2)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 1)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
             self.assertEqual(shared_albums_2[0]["title"], "Photos/2011/At Toronto")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items in client 1 are the old pics
-            media_items_1 = client_1.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
             self.assertEqual(media_items_1[1]["filename"], "20110902_190900.jpeg")
             self.assertEqual(media_items_1[2]["filename"], "20110902_190901.jpeg")
 
             # Test assertions: Check media items in client 2 are the new pics
-            media_items_2 = client_2.search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_2), 3)
             self.assertEqual(media_items_2[0]["filename"], "20110720_213057.jpg")
             self.assertEqual(media_items_2[1]["filename"], "20110720_213146.jpg")
             self.assertEqual(media_items_2[2]["filename"], "20110720_213147.jpg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1 = client_1.search_for_media_items(
+            items_in_shared_albums_1 = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
-            items_in_shared_albums_2 = client_2.search_for_media_items(
+            items_in_shared_albums_2 = client_2.media_items().search_for_media_items(
                 shared_albums_2[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 3)
@@ -322,8 +322,8 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 3)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 2)
             self.assertEqual(len(shared_albums_2), 1)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
@@ -331,11 +331,11 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(shared_albums_2[0]["title"], "Photos/2012/At Toronto")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items in client 1 are the old pics
-            media_items_1 = client_1.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 4)
             self.assertEqual(media_items_1[0]["filename"], "1.jpeg")
             self.assertEqual(media_items_1[1]["filename"], "2.jpeg")
@@ -343,19 +343,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[3]["filename"], "4.jpeg")
 
             # Test assertions: Check media items in client 2 are the new pics
-            media_items_2 = client_2.search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_2), 2)
             self.assertEqual(media_items_2[0]["filename"], "5.jpg")
             self.assertEqual(media_items_2[1]["filename"], "6.jpg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1a = client_1.search_for_media_items(
+            items_in_shared_albums_1a = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
-            items_in_shared_albums_1b = client_1.search_for_media_items(
+            items_in_shared_albums_1b = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
-            items_in_shared_albums_2 = client_2.search_for_media_items(
+            items_in_shared_albums_2 = client_2.media_items().search_for_media_items(
                 shared_albums_2[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1a), 2)
@@ -375,11 +375,15 @@ class GPhotosBackupTests(unittest.TestCase):
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
 
-            album_1_id = client_1.create_album("B")["id"]
-            client_1.share_album(album_1_id)
+            album_1_id = client_1.albums().create_album("B")["id"]
+            client_1.albums().share_album(album_1_id)
             for i in range(2):
-                upload_token = client_1.upload_photo(f"./B/{i}.jpg", f"{i}.jpg")
-                client_1.add_uploaded_photos_to_gphotos([upload_token], album_1_id)
+                upload_token = client_1.media_items().upload_photo(
+                    f"./B/{i}.jpg", f"{i}.jpg"
+                )
+                client_1.media_items().add_uploaded_photos_to_gphotos(
+                    [upload_token], album_1_id
+                )
 
             diffs = [
                 {"modifier": "+", "path": "./B/2.jpg"},
@@ -393,19 +397,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 1)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 1)
             self.assertEqual(shared_albums_1[0]["title"], "B")
             self.assertEqual(shared_albums_2[0]["title"], "A")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items in client 1 are the old pics
-            media_items_1 = client_1.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 4)
             self.assertEqual(media_items_1[0]["filename"], "0.jpg")
             self.assertEqual(media_items_1[1]["filename"], "1.jpg")
@@ -413,16 +417,16 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[3]["filename"], "3.jpg")
 
             # Test assertions: Check media items in client 2 are the new pics
-            media_items_2 = client_2.search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_2), 2)
             self.assertEqual(media_items_2[0]["filename"], "1.jpg")
             self.assertEqual(media_items_2[1]["filename"], "2.jpg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1 = client_1.search_for_media_items(
+            items_in_shared_albums_1 = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
-            items_in_shared_albums_2 = client_2.search_for_media_items(
+            items_in_shared_albums_2 = client_2.media_items().search_for_media_items(
                 shared_albums_2[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 4)
@@ -478,19 +482,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 0)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 0)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 6)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -501,7 +505,7 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[5]["filename"], "20110903_190901.jpeg")
 
             # Test assertions: Check media items in that shared album
-            items_in_shared_albums_1 = client_1.search_for_media_items(
+            items_in_shared_albums_1 = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 6)
@@ -600,19 +604,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 0)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 0)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 4)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -621,7 +625,7 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[3]["filename"], "20110902_190903.jpeg")
 
             # Test assertions: Check media items in that shared album
-            shared_albums_1_items = client_1.search_for_media_items(
+            shared_albums_1_items = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
             shared_albums_1_filenames = set(
@@ -681,19 +685,19 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 0)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 0)
             self.assertEqual(shared_albums_1[0]["title"], "Photos/2011/Trip to Chicago")
 
             # Test assertions: Check regular albums
-            self.assertEqual(len(client_1.list_albums()), 0)
-            self.assertEqual(len(client_2.list_albums()), 0)
+            self.assertEqual(len(client_1.albums().list_albums()), 0)
+            self.assertEqual(len(client_2.albums().list_albums()), 0)
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -701,7 +705,7 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[2]["filename"], "20110902_190901.jpeg")
 
             # Test assertions: Check media items in that shared album
-            shared_albums_1_items = client_1.search_for_media_items(
+            shared_albums_1_items = client_1.media_items().search_for_media_items(
                 shared_albums_1[0]["id"]
             )
             shared_albums_1_filenames = set(
@@ -758,14 +762,14 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 0)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 0)
             self.assertEqual(len(shared_albums_2), 0)
 
             # Test assertions: Check regular albums
-            albums_1 = client_1.list_albums()
-            albums_2 = client_2.list_albums()
+            albums_1 = client_1.albums().list_albums()
+            albums_2 = client_2.albums().list_albums()
             self.assertEqual(len(albums_1), 1)
             self.assertEqual(len(albums_2), 0)
             self.assertEqual(
@@ -773,8 +777,8 @@ class GPhotosBackupTests(unittest.TestCase):
             )
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -782,7 +786,9 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(media_items_1[2]["filename"], "20110902_190901.jpeg")
 
             # Test assertions: Check media items in that old album
-            albums_1_items = client_1.search_for_media_items(albums_1[0]["id"])
+            albums_1_items = client_1.media_items().search_for_media_items(
+                albums_1[0]["id"]
+            )
             self.assertEqual(len(albums_1_items), 0)
 
     def test_backup__removes_photo_not_in_album__does_nothing(
@@ -826,20 +832,20 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(shared_album_uris), 0)
 
             # Test assertions: Check shared albums
-            shared_albums_1 = client_1.list_shared_albums()
-            shared_albums_2 = client_2.list_shared_albums()
+            shared_albums_1 = client_1.albums().list_shared_albums()
+            shared_albums_2 = client_2.albums().list_shared_albums()
             self.assertEqual(len(shared_albums_1), 1)
             self.assertEqual(len(shared_albums_2), 0)
 
             # Test assertions: Check regular albums
-            albums_1 = client_1.list_albums()
-            albums_2 = client_2.list_albums()
+            albums_1 = client_1.albums().list_albums()
+            albums_2 = client_2.albums().list_albums()
             self.assertEqual(len(albums_1), 0)
             self.assertEqual(len(albums_2), 0)
 
             # Test assertions: Check media items
-            media_items_1 = client_1.search_for_media_items()
-            media_items_2 = client_2.search_for_media_items()
+            media_items_1 = client_1.media_items().search_for_media_items()
+            media_items_2 = client_2.media_items().search_for_media_items()
             self.assertEqual(len(media_items_1), 3)
             self.assertEqual(len(media_items_2), 0)
             self.assertEqual(media_items_1[0]["filename"], "20110902_075900.jpeg")
@@ -848,7 +854,9 @@ class GPhotosBackupTests(unittest.TestCase):
 
             # Test assertions: Check media items in shared album
             shared_albums_1_id = shared_albums_1[0]["id"]
-            shared_albums_1_items = client_1.search_for_media_items(shared_albums_1_id)
+            shared_albums_1_items = client_1.media_items().search_for_media_items(
+                shared_albums_1_id
+            )
             shared_albums_1_filenames = set(
                 [m["filename"] for m in shared_albums_1_items]
             )

@@ -121,7 +121,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            shared_albums = client.list_shared_albums()
+            shared_albums = client.albums().list_shared_albums()
 
             self.assertEqual(shared_albums, albums)
 
@@ -160,7 +160,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            actual_albums = client.list_albums()
+            actual_albums = client.albums().list_albums()
 
             self.assertEqual(actual_albums, albums)
 
@@ -182,7 +182,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.create_album("Photos/2011")
+            response = client.albums().create_album("Photos/2011")
 
             self.assertEqual(response, mock_response)
 
@@ -211,7 +211,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.share_album("123")
+            response = client.albums().share_album("123")
 
             self.assertEqual(response, mock_response)
 
@@ -249,7 +249,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.join_album("abc")
+            response = client.albums().join_album("abc")
 
             self.assertEqual(response, mock_response)
 
@@ -265,7 +265,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.unshare_album("123")
+            response = client.albums().unshare_album("123")
 
             self.assertEqual(response, None)
 
@@ -281,7 +281,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.add_photos_to_album("123", ["1", "2", "3"])
+            response = client.albums().add_photos_to_album("123", ["1", "2", "3"])
 
             self.assertEqual(response, None)
 
@@ -297,7 +297,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.remove_photos_from_album("123", ["1", "2", "3"])
+            response = client.albums().remove_photos_from_album("123", ["1", "2", "3"])
 
             self.assertEqual(response, None)
 
@@ -362,7 +362,9 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.add_uploaded_photos_to_gphotos(["u1", "u2", "u3"], "123")
+            response = client.media_items().add_uploaded_photos_to_gphotos(
+                ["u1", "u2", "u3"], "123"
+            )
 
             self.assertEqual(response, mock_response)
 
@@ -380,7 +382,7 @@ class GPhotosClientTests(unittest.TestCase):
             client.authenticate()
 
             with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as mock_file:
-                response = client.upload_photo(mock_file.name, "dog.jpg")
+                response = client.media_items().upload_photo(mock_file.name, "dog.jpg")
 
                 self.assertEqual(response, "u1")
 
@@ -412,7 +414,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.search_for_media_items(album_id="123")
+            response = client.media_items().search_for_media_items(album_id="123")
 
             self.assertEqual(response, media_items)
 
@@ -438,7 +440,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.update_album("123", new_title="Photos/2012")
+            response = client.albums().update_album("123", new_title="Photos/2012")
 
             self.assertEqual(response, mock_response)
 
@@ -461,7 +463,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.update_album("123", new_cover_media_item_id="2")
+            response = client.albums().update_album("123", new_cover_media_item_id="2")
 
             self.assertEqual(response, mock_response)
 
@@ -486,7 +488,7 @@ class GPhotosClientTests(unittest.TestCase):
             )
 
             client.authenticate()
-            response = client.update_album(
+            response = client.albums().update_album(
                 "123", new_title="Photos/2012", new_cover_media_item_id="2"
             )
 
@@ -511,7 +513,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             client = GPhotosClient(creds_file_path, "123.json")
             client.authenticate()
-            upload_token = client.upload_photo_in_chunks(
+            upload_token = client.media_items().upload_photo_in_chunks(
                 photo_file_path="./tests/shared/resources/small-image.jpg",
                 file_name="small-image.jpg",
             )
@@ -580,7 +582,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             client = GPhotosClient(creds_file_path, "123.json")
             client.authenticate()
-            upload_token = client.upload_photo_in_chunks(
+            upload_token = client.media_items().upload_photo_in_chunks(
                 photo_file_path="./tests/shared/resources/small-image.jpg",
                 file_name="small-image.jpg",
             )

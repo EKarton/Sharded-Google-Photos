@@ -17,10 +17,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
         client.authenticate()
-        album = client.create_album("Photos/2011")
-        client.share_album(album["id"])
+        album = client.albums().create_album("Photos/2011")
+        client.albums().share_album(album["id"])
 
-        shared_albums = client.list_shared_albums()
+        shared_albums = client.albums().list_shared_albums()
 
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["id"], album["id"])
@@ -33,11 +33,13 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
+        album = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
 
-        shared_albums = client_2.list_shared_albums()
+        shared_albums = client_2.albums().list_shared_albums()
 
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["id"], album["id"])
@@ -50,10 +52,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        client_1.share_album(album["id"])["shareInfo"]["shareToken"]
+        album = client_1.albums().create_album("Photos/2011")
+        client_1.albums().share_album(album["id"])["shareInfo"]["shareToken"]
 
-        shared_albums = client_2.list_shared_albums()
+        shared_albums = client_2.albums().list_shared_albums()
 
         self.assertEqual(len(shared_albums), 0)
 
@@ -61,9 +63,9 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        client_1.create_album("Photos/2011")
+        client_1.albums().create_album("Photos/2011")
 
-        shared_albums = client_1.list_shared_albums()
+        shared_albums = client_1.albums().list_shared_albums()
 
         self.assertEqual(len(shared_albums), 0)
 
@@ -72,16 +74,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.list_shared_albums()
+            client.albums().list_shared_albums()
 
     def test_list_albums__created_albums__returns_albums(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        album_2 = client_1.create_album("Photos/2012")
+        album_1 = client_1.albums().create_album("Photos/2011")
+        album_2 = client_1.albums().create_album("Photos/2012")
 
-        albums_list = client_1.list_albums()
+        albums_list = client_1.albums().list_albums()
 
         self.assertEqual(len(albums_list), 2)
         self.assertEqual(albums_list[0]["id"], album_1["id"])
@@ -93,10 +95,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        client_2.create_album("Photos/2011")
-        client_2.create_album("Photos/2012")
+        client_2.albums().create_album("Photos/2011")
+        client_2.albums().create_album("Photos/2012")
 
-        albums_list = client_1.list_albums()
+        albums_list = client_1.albums().list_albums()
 
         self.assertEqual(len(albums_list), 0)
 
@@ -104,10 +106,10 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album = client_1.create_album("Photos/2011")
-        client_1.share_album(album["id"])
+        album = client_1.albums().create_album("Photos/2011")
+        client_1.albums().share_album(album["id"])
 
-        albums_list = client_1.list_albums()
+        albums_list = client_1.albums().list_albums()
 
         self.assertEqual(len(albums_list), 0)
 
@@ -116,16 +118,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.list_albums()
+            client.albums().list_albums()
 
     def test_create_album__returns_album_and_response_correctly(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
 
-        album = client_1.create_album("Photos/2011")
+        album = client_1.albums().create_album("Photos/2011")
 
-        albums_list = client_1.list_albums()
+        albums_list = client_1.albums().list_albums()
         self.assertEqual(len(albums_list), 1)
         self.assertEqual(album["title"], "Photos/2011")
         self.assertTrue(album["isWriteable"])
@@ -137,9 +139,9 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1.authenticate()
         client_2.authenticate()
 
-        client_2.create_album("Photos/2011")
+        client_2.albums().create_album("Photos/2011")
 
-        albums_list = client_1.list_albums()
+        albums_list = client_1.albums().list_albums()
         self.assertEqual(len(albums_list), 0)
 
     def test_create_album__not_authenticated__throws_error(self):
@@ -147,7 +149,7 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.create_album("Photos/2011")
+            client.albums().create_album("Photos/2011")
 
     def test_share_album__non_collaborative_and_non_commentable__returns_correct_response(
         self,
@@ -155,9 +157,9 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album = client_1.create_album("Photos/2011")
+        album = client_1.albums().create_album("Photos/2011")
 
-        share_info = client_1.share_album(album["id"])["shareInfo"]
+        share_info = client_1.albums().share_album(album["id"])["shareInfo"]
 
         self.assertFalse(share_info["sharedAlbumOptions"]["isCollaborative"])
         self.assertFalse(share_info["sharedAlbumOptions"]["isCommentable"])
@@ -171,19 +173,19 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
+        album = client_1.albums().create_album("Photos/2011")
 
         with self.assertRaisesRegex(
             Exception, "Cannot share album that it cannot have access to"
         ):
-            client_2.share_album(album["id"])
+            client_2.albums().share_album(album["id"])
 
     def test_share_album__not_authenticated__throws_error(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.share_album(uuid.uuid4())
+            client.albums().share_album(uuid.uuid4())
 
     def test_join_album__should_return_shared_albums(self):
         repo = FakeItemsRepository()
@@ -191,12 +193,14 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
+        album = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album["id"])["shareInfo"][
+            "shareToken"
+        ]
 
-        client_2.join_album(share_token)
+        client_2.albums().join_album(share_token)
 
-        shared_albums = client_2.list_shared_albums()
+        shared_albums = client_2.albums().list_shared_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["id"], album["id"])
 
@@ -205,19 +209,19 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.join_album(uuid.uuid4())
+            client.albums().join_album(uuid.uuid4())
 
     def test_unshare_album__removes_from_shared_album(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album = client_1.create_album("Photos/2011")
-        client_1.share_album(album["id"])["shareInfo"]["shareToken"]
+        album = client_1.albums().create_album("Photos/2011")
+        client_1.albums().share_album(album["id"])["shareInfo"]["shareToken"]
 
-        client_1.unshare_album(album["id"])
+        client_1.albums().unshare_album(album["id"])
 
-        shared_albums = client_1.list_shared_albums()
-        albums = client_1.list_albums()
+        shared_albums = client_1.albums().list_shared_albums()
+        albums = client_1.albums().list_albums()
         self.assertEqual(len(shared_albums), 0)
         self.assertEqual(len(albums), 1)
         self.assertEqual(albums[0]["id"], album["id"])
@@ -230,14 +234,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
+        album = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
 
-        client_1.unshare_album(album["id"])
+        client_1.albums().unshare_album(album["id"])
 
-        shared_albums = client_2.list_shared_albums()
-        albums = client_2.list_albums()
+        shared_albums = client_2.albums().list_shared_albums()
+        albums = client_2.albums().list_albums()
         self.assertEqual(len(shared_albums), 0)
         self.assertEqual(len(albums), 0)
 
@@ -247,34 +253,38 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
+        album = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
 
         with self.assertRaisesRegex(
             Exception, "Cannot unshare album that it does not own"
         ):
-            client_2.unshare_album(album["id"])
+            client_2.albums().unshare_album(album["id"])
 
     def test_unshare_album__not_authenticated__throws_error(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.unshare_album(uuid.uuid4())
+            client.albums().unshare_album(uuid.uuid4())
 
     def test_add_photos_to_album__existing_album__adds_media_items_to_albums(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album = client_1.create_album("Photos/2011")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        album = client_1.albums().create_album("Photos/2011")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos([upload_token])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.add_photos_to_album(album["id"], [new_media_item_id])
+        client_1.albums().add_photos_to_album(album["id"], [new_media_item_id])
 
-        media_items = client_1.search_for_media_items(album["id"])
+        media_items = client_1.media_items().search_for_media_items(album["id"])
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -286,16 +296,20 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
-        upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_2.add_uploaded_photos_to_gphotos([upload_token])
+        album = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
+        upload_token = client_2.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_2.media_items().add_uploaded_photos_to_gphotos([upload_token])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_2.add_photos_to_album(album["id"], [new_media_item_id])
+        client_2.albums().add_photos_to_album(album["id"], [new_media_item_id])
 
-        media_items = client_2.search_for_media_items(album["id"])
+        media_items = client_2.media_items().search_for_media_items(album["id"])
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -305,17 +319,23 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        album_2 = client_1.create_album("Photos/2012")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        album_2 = client_1.albums().create_album("Photos/2012")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos([upload_token])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.add_photos_to_album(album_1["id"], [new_media_item_id])
-        client_1.add_photos_to_album(album_2["id"], [new_media_item_id])
+        client_1.albums().add_photos_to_album(album_1["id"], [new_media_item_id])
+        client_1.albums().add_photos_to_album(album_2["id"], [new_media_item_id])
 
-        media_items_in_album_1 = client_1.search_for_media_items(album_1["id"])
-        media_items_in_album_2 = client_1.search_for_media_items(album_1["id"])
+        media_items_in_album_1 = client_1.media_items().search_for_media_items(
+            album_1["id"]
+        )
+        media_items_in_album_2 = client_1.media_items().search_for_media_items(
+            album_1["id"]
+        )
         self.assertEqual(len(media_items_in_album_1), 1)
         self.assertEqual(media_items_in_album_1[0]["id"], new_media_item_id)
         self.assertEqual(len(media_items_in_album_2), 1)
@@ -327,15 +347,19 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        album_2 = client_1.create_album("Photos/2012")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        album_2 = client_1.albums().create_album("Photos/2012")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos([upload_token])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.add_photos_to_album(album_1["id"], [new_media_item_id])
+        client_1.albums().add_photos_to_album(album_1["id"], [new_media_item_id])
 
-        media_items_in_album_2 = client_1.search_for_media_items(album_2["id"])
+        media_items_in_album_2 = client_1.media_items().search_for_media_items(
+            album_2["id"]
+        )
         self.assertEqual(len(media_items_in_album_2), 0)
 
     def test_add_photos_to_album__not_authenticated__throws_error(self):
@@ -343,7 +367,9 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.add_photos_to_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
+            client.albums().add_photos_to_album(
+                uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()]
+            )
 
     def test_remove_photos_from_album__on_photo_in_album__removes_photo_from_album(
         self,
@@ -351,14 +377,20 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+        client_1.albums().remove_photos_from_album(album_1["id"], [new_media_item_id])
 
-        media_items_in_album_1 = client_1.search_for_media_items(album_1["id"])
+        media_items_in_album_1 = client_1.media_items().search_for_media_items(
+            album_1["id"]
+        )
         self.assertEqual(len(media_items_in_album_1), 0)
 
     def test_remove_photos_from_album__on_photo_in_shared_album__removes_photo_from_shared_album_on_all_users(
@@ -369,17 +401,27 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
-        upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_2.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
+        upload_token = client_2.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_2.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_2.remove_photos_from_album(album_1["id"], [new_media_item_id])
+        client_2.albums().remove_photos_from_album(album_1["id"], [new_media_item_id])
 
-        self.assertEqual(len(client_1.search_for_media_items(album_1["id"])), 0)
-        self.assertEqual(len(client_2.search_for_media_items(album_1["id"])), 0)
+        self.assertEqual(
+            len(client_1.media_items().search_for_media_items(album_1["id"])), 0
+        )
+        self.assertEqual(
+            len(client_2.media_items().search_for_media_items(album_1["id"])), 0
+        )
 
     def test_remove_photos_from_album__on_photo_in_album__does_not_remove_photo_from_gphotos(
         self,
@@ -387,14 +429,18 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+        client_1.albums().remove_photos_from_album(album_1["id"], [new_media_item_id])
 
-        media_items = client_1.search_for_media_items()
+        media_items = client_1.media_items().search_for_media_items()
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -404,16 +450,20 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        album_2 = client_1.create_album("Photos/2012")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        album_2 = client_1.albums().create_album("Photos/2012")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        client_1.add_photos_to_album(album_2["id"], [new_media_item_id])
+        client_1.albums().add_photos_to_album(album_2["id"], [new_media_item_id])
 
-        client_1.remove_photos_from_album(album_1["id"], [new_media_item_id])
+        client_1.albums().remove_photos_from_album(album_1["id"], [new_media_item_id])
 
-        media_items = client_1.search_for_media_items(album_2["id"])
+        media_items = client_1.media_items().search_for_media_items(album_2["id"])
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -423,35 +473,47 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
         with self.assertRaisesRegex(
             Exception, "Cannot remove someone else's photos from album"
         ):
-            client_2.remove_photos_from_album(album_1["id"], [new_media_item_id])
+            client_2.albums().remove_photos_from_album(
+                album_1["id"], [new_media_item_id]
+            )
 
     def test_remove_photos_from_album__not_authenticated__throws_error(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.remove_photos_from_album(uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()])
+            client.albums().remove_photos_from_album(
+                uuid.uuid4(), [uuid.uuid4(), uuid.uuid4()]
+            )
 
     def test_add_uploaded_photos_to_gphotos__no_album__adds_to_gphotos_account(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
 
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        results = client_1.media_items().add_uploaded_photos_to_gphotos([upload_token])
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        media_items = client_1.search_for_media_items()
+        media_items = client_1.media_items().search_for_media_items()
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -460,24 +522,30 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
         upload_tokens = [
-            client_1.upload_photo(f"Photos/2011/dog_{i}.jpg", f"dog_{i}.jpg")
+            client_1.media_items().upload_photo(
+                f"Photos/2011/dog_{i}.jpg", f"dog_{i}.jpg"
+            )
             for i in range(50)
         ]
 
         with self.assertRaisesRegex(Exception, "Must have less than 50 upload tokens"):
-            client_1.add_uploaded_photos_to_gphotos(upload_tokens)
+            client_1.media_items().add_uploaded_photos_to_gphotos(upload_tokens)
 
     def test_add_uploaded_photos_to_gphotos__regular_album__adds_to_album(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        album_1 = client_1.albums().create_album("Photos/2011")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
 
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        media_items = client_1.search_for_media_items(album_1["id"])
+        media_items = client_1.media_items().search_for_media_items(album_1["id"])
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -485,14 +553,18 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        client_1.share_album(album_1["id"])
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        album_1 = client_1.albums().create_album("Photos/2011")
+        client_1.albums().share_album(album_1["id"])
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
 
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        media_items = client_1.search_for_media_items(album_1["id"])
+        media_items = client_1.media_items().search_for_media_items(album_1["id"])
         self.assertEqual(len(media_items), 1)
         self.assertEqual(media_items[0]["id"], new_media_item_id)
 
@@ -504,16 +576,26 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
-        upload_token = client_2.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
+        upload_token = client_2.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
 
-        results = client_2.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        results = client_2.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
 
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
-        media_items_from_client_1 = client_1.search_for_media_items(album_1["id"])
-        media_items_from_client_2 = client_2.search_for_media_items(album_1["id"])
+        media_items_from_client_1 = client_1.media_items().search_for_media_items(
+            album_1["id"]
+        )
+        media_items_from_client_2 = client_2.media_items().search_for_media_items(
+            album_1["id"]
+        )
         self.assertEqual(len(media_items_from_client_1), 1)
         self.assertEqual(media_items_from_client_1[0]["id"], new_media_item_id)
         self.assertEqual(len(media_items_from_client_2), 1)
@@ -524,14 +606,18 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.add_uploaded_photos_to_gphotos([uuid.uuid4(), uuid.uuid4()])
+            client.media_items().add_uploaded_photos_to_gphotos(
+                [uuid.uuid4(), uuid.uuid4()]
+            )
 
     def test_upload_photo__returns_upload_token(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
         client.authenticate()
 
-        upload_token = client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+        upload_token = client.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
 
         self.assertNotEqual(upload_token, None)
 
@@ -540,14 +626,14 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
+            client.media_items().upload_photo("Photos/2011/dog.jpg", "dog.jpg")
 
     def test_search_for_media_items__no_photos__returns_nothing(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
         client.authenticate()
 
-        results = client.search_for_media_items()
+        results = client.media_items().search_for_media_items()
 
         self.assertEqual(len(results), 0)
 
@@ -559,12 +645,14 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token])
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos([upload_token])
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-        search_results_1 = client_1.search_for_media_items()
-        search_results_2 = client_2.search_for_media_items()
+        search_results_1 = client_1.media_items().search_for_media_items()
+        search_results_2 = client_2.media_items().search_for_media_items()
 
         self.assertEqual(len(search_results_1), 1)
         self.assertEqual(search_results_1[0]["id"], new_media_item_id)
@@ -576,12 +664,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-        search_results_1 = client_1.search_for_media_items(album_1["id"])
+        search_results_1 = client_1.media_items().search_for_media_items(album_1["id"])
 
         self.assertEqual(len(search_results_1), 1)
         self.assertEqual(search_results_1[0]["id"], new_media_item_id)
@@ -594,15 +686,21 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
-        upload_token = client_1.upload_photo("Photos/2011/dog.jpg", "dog.jpg")
-        results = client_1.add_uploaded_photos_to_gphotos([upload_token], album_1["id"])
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
+        upload_token = client_1.media_items().upload_photo(
+            "Photos/2011/dog.jpg", "dog.jpg"
+        )
+        results = client_1.media_items().add_uploaded_photos_to_gphotos(
+            [upload_token], album_1["id"]
+        )
         new_media_item_id = results["newMediaItemResults"][0]["mediaItem"]["id"]
 
-        search_results_1 = client_1.search_for_media_items(album_1["id"])
-        search_results_2 = client_2.search_for_media_items(album_1["id"])
+        search_results_1 = client_1.media_items().search_for_media_items(album_1["id"])
+        search_results_2 = client_2.media_items().search_for_media_items(album_1["id"])
 
         self.assertEqual(len(search_results_1), 1)
         self.assertEqual(search_results_1[0]["id"], new_media_item_id)
@@ -614,18 +712,20 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.search_for_media_items()
+            client.media_items().search_for_media_items()
 
     def test_update_album__returns_info_and_updates_album(self):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
+        album_1 = client_1.albums().create_album("Photos/2011")
 
-        updated_album_info = client_1.update_album(album_1["id"], "Photos/2020")
+        updated_album_info = client_1.albums().update_album(
+            album_1["id"], "Photos/2020"
+        )
 
         self.assertEqual(updated_album_info["title"], "Photos/2020")
-        shared_albums = client_1.list_albums()
+        shared_albums = client_1.albums().list_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2020")
 
@@ -633,12 +733,12 @@ class FakeGPhotosClientTests(unittest.TestCase):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repo)
         client_1.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
+        album_1 = client_1.albums().create_album("Photos/2011")
+        client_1.albums().share_album(album_1["id"])["shareInfo"]["shareToken"]
 
-        client_1.update_album(album_1["id"], "Photos/2020")
+        client_1.albums().update_album(album_1["id"], "Photos/2020")
 
-        shared_albums = client_1.list_shared_albums()
+        shared_albums = client_1.albums().list_shared_albums()
         self.assertEqual(len(shared_albums), 1)
         self.assertEqual(shared_albums[0]["title"], "Photos/2020")
 
@@ -650,14 +750,16 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
 
-        client_1.update_album(album_1["id"], "Photos/2020")
+        client_1.albums().update_album(album_1["id"], "Photos/2020")
 
-        shared_albums_on_client_1 = client_1.list_shared_albums()
-        shared_albums_on_client_2 = client_2.list_shared_albums()
+        shared_albums_on_client_1 = client_1.albums().list_shared_albums()
+        shared_albums_on_client_2 = client_2.albums().list_shared_albums()
         self.assertEqual(len(shared_albums_on_client_1), 1)
         self.assertEqual(shared_albums_on_client_1[0]["title"], "Photos/2020")
         self.assertEqual(len(shared_albums_on_client_2), 1)
@@ -669,12 +771,14 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
-        share_token = client_1.share_album(album_1["id"])["shareInfo"]["shareToken"]
-        client_2.join_album(share_token)
+        album_1 = client_1.albums().create_album("Photos/2011")
+        share_token = client_1.albums().share_album(album_1["id"])["shareInfo"][
+            "shareToken"
+        ]
+        client_2.albums().join_album(share_token)
 
         with self.assertRaisesRegex(Exception, "Cannot update album it does not own"):
-            client_2.update_album(album_1["id"], "Photos/2020")
+            client_2.albums().update_album(album_1["id"], "Photos/2020")
 
     def test_update_album__album_on_another_account__throws_error(self):
         repo = FakeItemsRepository()
@@ -682,14 +786,14 @@ class FakeGPhotosClientTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repo)
         client_1.authenticate()
         client_2.authenticate()
-        album_1 = client_1.create_album("Photos/2011")
+        album_1 = client_1.albums().create_album("Photos/2011")
 
         with self.assertRaisesRegex(Exception, "Cannot update album it does not own"):
-            client_2.update_album(album_1["id"], "Photos/2020")
+            client_2.albums().update_album(album_1["id"], "Photos/2020")
 
     def test_update_album__not_authenticated__throws_error(self):
         repo = FakeItemsRepository()
         client = FakeGPhotosClient(repo)
 
         with self.assertRaisesRegex(Exception, "Not authenticated yet"):
-            client.update_album("album1")
+            client.albums().update_album("album1")

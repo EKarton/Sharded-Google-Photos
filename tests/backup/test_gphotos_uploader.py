@@ -20,8 +20,8 @@ class GPhotosUploaderTests(unittest.TestCase):
         upload_tokens = uploader.upload_photos(file_paths, file_names)
 
         self.assertEqual(len(upload_tokens), 2)
-        client.add_uploaded_photos_to_gphotos(upload_tokens)
-        media_items = client.search_for_media_items()
+        client.media_items().add_uploaded_photos_to_gphotos(upload_tokens)
+        media_items = client.media_items().search_for_media_items()
         self.assertEqual(len(media_items), 2)
         self.assertEqual(media_items[0]["filename"], file_names[0])
         self.assertEqual(media_items[1]["filename"], file_names[1])
