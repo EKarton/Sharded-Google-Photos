@@ -1,10 +1,12 @@
 import logging
 
+from sharded_google_photos.shared.gphotos_client import GPhotosClient
+
 logger = logging.getLogger(__name__)
 
 
 class MediaItemRepository:
-    def __init__(self, album_id, gphoto_client):
+    def __init__(self, album_id: str, gphoto_client: GPhotosClient):
         self.album_id = album_id
         self.gphoto_client = gphoto_client
 
@@ -15,7 +17,9 @@ class MediaItemRepository:
         self.media_id_to_obj = {}
         self.file_name_to_media_ids = {}
 
-        media_items = self.gphoto_client.search_for_media_items(album_id=self.album_id)
+        media_items = self.gphoto_client.media_items().search_for_media_items(
+            album_id=self.album_id
+        )
 
         for media_item in media_items:
             file_name = media_item["filename"]
@@ -49,7 +53,7 @@ class MediaItemRepository:
             del self.media_id_to_obj[media_id]
             del self.file_name_to_media_ids[media_item["filename"]]
 
-        self.gphoto_client.remove_photos_from_album(self.album_id, media_ids)
+        self.gphoto_client.albums().remove_photos_from_album(self.album_id, media_ids)
 
         logger.debug(f"Media items removed from album {self.album_id}: {media_ids}")
 
@@ -58,7 +62,7 @@ class MediaItemRepository:
             logger.debug("No uploaded tokens to add")
             return
 
-        results = self.gphoto_client.add_uploaded_photos_to_gphotos(
+        results = self.gphoto_client.media_items().add_uploaded_photos_to_gphotos(
             upload_tokens, self.album_id
         )
         media_items = [obj["mediaItem"] for obj in results["newMediaItemResults"]]

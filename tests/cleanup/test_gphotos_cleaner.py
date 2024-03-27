@@ -15,14 +15,14 @@ class GPhotosClientTests(unittest.TestCase):
         self,
     ):
         # Test setup: Add four photos in client 1 with two of them in shared album A
-        u1 = self.client_1.upload_photo("A/1.jpg", "1.jpg")
-        u2 = self.client_1.upload_photo("A/2.jpg", "2.jpg")
-        u3 = self.client_1.upload_photo("A/3.jpg", "3.jpg")
-        u4 = self.client_1.upload_photo("A/4.jpg", "4.jpg")
-        a1 = self.client_1.create_album("A")["id"]
-        self.client_1.share_album(a1)
-        self.client_1.add_uploaded_photos_to_gphotos([u1, u2], a1)
-        upload_2 = self.client_1.add_uploaded_photos_to_gphotos([u3, u4])
+        u1 = self.client_1.media_items().upload_photo("A/1.jpg", "1.jpg")
+        u2 = self.client_1.media_items().upload_photo("A/2.jpg", "2.jpg")
+        u3 = self.client_1.media_items().upload_photo("A/3.jpg", "3.jpg")
+        u4 = self.client_1.media_items().upload_photo("A/4.jpg", "4.jpg")
+        a1 = self.client_1.albums().create_album("A")["id"]
+        self.client_1.albums().share_album(a1)
+        self.client_1.media_items().add_uploaded_photos_to_gphotos([u1, u2], a1)
+        upload_2 = self.client_1.media_items().add_uploaded_photos_to_gphotos([u3, u4])
 
         # Act: Clean on the client
         cleaner = GPhotosCleaner(self.client_1)
@@ -37,15 +37,15 @@ class GPhotosClientTests(unittest.TestCase):
         self,
     ):
         # Test setup: Add four photos in client 1 with two of them in shared album A
-        u1 = self.client_1.upload_photo("A/1.jpg", "1.jpg")
-        u2 = self.client_1.upload_photo("A/2.jpg", "2.jpg")
-        u3 = self.client_1.upload_photo("A/3.jpg", "3.jpg")
-        u4 = self.client_1.upload_photo("A/4.jpg", "4.jpg")
-        a1 = self.client_1.create_album("A")["id"]
-        a2 = self.client_1.create_album("Trash")["id"]
-        self.client_1.share_album(a1)
-        self.client_1.add_uploaded_photos_to_gphotos([u1, u2], a1)
-        upload_2 = self.client_1.add_uploaded_photos_to_gphotos([u3, u4])
+        u1 = self.client_1.media_items().upload_photo("A/1.jpg", "1.jpg")
+        u2 = self.client_1.media_items().upload_photo("A/2.jpg", "2.jpg")
+        u3 = self.client_1.media_items().upload_photo("A/3.jpg", "3.jpg")
+        u4 = self.client_1.media_items().upload_photo("A/4.jpg", "4.jpg")
+        a1 = self.client_1.albums().create_album("A")["id"]
+        a2 = self.client_1.albums().create_album("Trash")["id"]
+        self.client_1.albums().share_album(a1)
+        self.client_1.media_items().add_uploaded_photos_to_gphotos([u1, u2], a1)
+        upload_2 = self.client_1.media_items().add_uploaded_photos_to_gphotos([u3, u4])
 
         # Act: Clean on the client
         cleaner = GPhotosCleaner(self.client_1)
@@ -53,7 +53,7 @@ class GPhotosClientTests(unittest.TestCase):
 
         # Assertions: Check that u3 and u4 are in the trash
         media_item_ids_in_trash = set(
-            [m["id"] for m in self.client_1.search_for_media_items(a2)]
+            [m["id"] for m in self.client_1.media_items().search_for_media_items(a2)]
         )
         expected_media_item_ids = self.__get_media_ids_from_uploaded_files__(upload_2)
         self.assertEqual(media_item_ids_in_trash, expected_media_item_ids)
@@ -62,12 +62,14 @@ class GPhotosClientTests(unittest.TestCase):
         self,
     ):
         # Test setup: Add four photos to an unshared album
-        u1 = self.client_1.upload_photo("A/1.jpg", "1.jpg")
-        u2 = self.client_1.upload_photo("A/2.jpg", "2.jpg")
-        u3 = self.client_1.upload_photo("A/3.jpg", "3.jpg")
-        u4 = self.client_1.upload_photo("A/4.jpg", "4.jpg")
-        a1 = self.client_1.create_album("A")["id"]
-        upload_1 = self.client_1.add_uploaded_photos_to_gphotos([u1, u2, u3, u4], a1)
+        u1 = self.client_1.media_items().upload_photo("A/1.jpg", "1.jpg")
+        u2 = self.client_1.media_items().upload_photo("A/2.jpg", "2.jpg")
+        u3 = self.client_1.media_items().upload_photo("A/3.jpg", "3.jpg")
+        u4 = self.client_1.media_items().upload_photo("A/4.jpg", "4.jpg")
+        a1 = self.client_1.albums().create_album("A")["id"]
+        upload_1 = self.client_1.media_items().add_uploaded_photos_to_gphotos(
+            [u1, u2, u3, u4], a1
+        )
 
         # Act:
         cleaner = GPhotosCleaner(self.client_1)
@@ -81,11 +83,13 @@ class GPhotosClientTests(unittest.TestCase):
         self,
     ):
         # Test setup: Add four photos to an unshared album
-        u1 = self.client_1.upload_photo("A/1.jpg", "1.jpg")
-        u2 = self.client_1.upload_photo("A/2.jpg", "2.jpg")
-        u3 = self.client_1.upload_photo("A/3.jpg", "3.jpg")
-        u4 = self.client_1.upload_photo("A/4.jpg", "4.jpg")
-        upload_1 = self.client_1.add_uploaded_photos_to_gphotos([u1, u2, u3, u4])
+        u1 = self.client_1.media_items().upload_photo("A/1.jpg", "1.jpg")
+        u2 = self.client_1.media_items().upload_photo("A/2.jpg", "2.jpg")
+        u3 = self.client_1.media_items().upload_photo("A/3.jpg", "3.jpg")
+        u4 = self.client_1.media_items().upload_photo("A/4.jpg", "4.jpg")
+        upload_1 = self.client_1.media_items().add_uploaded_photos_to_gphotos(
+            [u1, u2, u3, u4]
+        )
 
         # Act:
         cleaner = GPhotosCleaner(self.client_1)
@@ -96,9 +100,9 @@ class GPhotosClientTests(unittest.TestCase):
         self.assertEqual(media_item_ids_in_trash, expected_media_item_ids)
 
     def __get_media_item_ids_in_trash__(self, client):
-        albums = client.list_albums()
+        albums = client.albums().list_albums()
         trash_id = next(x["id"] for x in albums if x["title"] == "Trash")
-        media_items = client.search_for_media_items(trash_id)
+        media_items = client.media_items().search_for_media_items(trash_id)
 
         return set([media_item["id"] for media_item in media_items])
 
