@@ -1,8 +1,8 @@
 import json
 import logging
-import mimetypes
 import os
 import backoff
+import magic
 from requests.exceptions import RequestException
 
 from google.auth.transport.requests import AuthorizedSession
@@ -132,7 +132,7 @@ class GPhotosMediaItemClient:
 
     def upload_photo_in_chunks(self, photo_file_path: str, file_name: str):
         upload_token = None
-        mime_type, _ = mimetypes.guess_type(photo_file_path)
+        mime_type = self._get_mime_type(photo_file_path)
         file_size_in_bytes = os.stat(photo_file_path).st_size
 
         logger.debug(
@@ -233,3 +233,6 @@ class GPhotosMediaItemClient:
             res.raise_for_status()
 
         return res
+
+    def _get_mime_type(self, file_path):
+        return magic.from_file(file_path, mime=True)

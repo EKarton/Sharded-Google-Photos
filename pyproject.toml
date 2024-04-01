@@ -11,6 +11,7 @@ python = "^3.12"
 google-api-python-client = "^2.122.0"
 google-auth-oauthlib = "^1.2.0"
 backoff = "^2.2.1"
+python-magic = "^0.4.27"
 
 
 [tool.poetry.group.dev.dependencies]

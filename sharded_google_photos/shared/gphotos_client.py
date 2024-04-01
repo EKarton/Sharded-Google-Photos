@@ -24,10 +24,12 @@ DEFAULT_SCOPES = [
 class GPhotosClient:
     def __init__(
         self,
+        name,
         creds_file,
         client_secret=DEFAULT_CLIENT_SECRETS_FILE,
         scopes=DEFAULT_SCOPES,
     ):
+        self.name = name
         self.creds_file = creds_file
         self.client_secret = client_secret
         self.scopes = scopes
@@ -92,7 +94,7 @@ class GPhotosClient:
         )
         logger.debug("Obtained saved credentials from oauth2 flow")
         iaflow.run_local_server(
-            authorization_prompt_message="Please visit this URL: {url}",
+            authorization_prompt_message=f"For {self.name}, please visit this URL: {{url}}",
             success_message="The auth flow is complete; you may close this window.",
             open_browser=False,
         )

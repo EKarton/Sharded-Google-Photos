@@ -8,9 +8,11 @@ It works like this:
 
 1. Let's say you have three Google Accounts.
 
-2. Install the package by running `pip install sharded-google-photos`.
+2. Install `libmagic`
 
-3. Import the following code in your `main.py` app:
+3. Install the package by running `pip install sharded-google-photos`.
+
+4. Import the following code in your `main.py` app:
 
     ```python
     from sharded_google_photos.backup.gphotos_backup import GPhotosBackup
@@ -27,7 +29,7 @@ It works like this:
     backup_client = GPhotosBackup(clients)
     ```
 
-4. To upload four photos from two folders, run the following:
+5. To upload four photos from two folders, run the following:
 
     ```python
     new_album_uris = backup_client.backup([
@@ -53,7 +55,7 @@ It works like this:
 
     3. The url to those new albums will be in `new_album_uris` that you can share to.
 
-5. To update a file in a folder, run the following:
+6. To update a file in a folder, run the following:
 
     ```python
     backup_client.backup([
@@ -64,7 +66,7 @@ It works like this:
     ])
     ```
 
-6. To delete a file in a folder, run the following:
+7. To delete a file in a folder, run the following:
 
     ```python
     backup_client.backup([
