@@ -32,7 +32,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             },
         ]
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("1", creds_file_path, "123.json")
             request_mocker.get(
                 "https://photoslibrary.googleapis.com/v1/sharedAlbums?excludeNonAppCreatedData=False",
                 json={"sharedAlbums": [albums[0]], "nextPageToken": "a"},
