@@ -162,14 +162,8 @@ class GPhotosMediaItemClient:
     def upload_photo(self, photo_file_path: str, file_name: str):
         logger.debug(f"Uploading photo {photo_file_path}")
 
-        try:
-            photo_file = open(photo_file_path, mode="rb")
-            photo_bytes = photo_file.read()
-        except OSError as err:
-            logger.error(
-                "Could not read file '{0}' -- {1}".format(photo_file_path, err)
-            )
-            return
+        photo_file = open(photo_file_path, mode="rb")
+        photo_bytes = photo_file.read()
 
         self._session.headers["Content-type"] = "application/octet-stream"
         self._session.headers["X-Goog-Upload-Protocol"] = "raw"
@@ -182,8 +176,9 @@ class GPhotosMediaItemClient:
             res.raise_for_status()
 
         if res.status_code != 200 or not res.content:
-            logger.error(f"No valid upload token {res.status_code} {res.content}")
-            return
+            raise IllegalStateException(
+                f"No valid upload token {res.status_code} {res.content}"
+            )
 
         return res.content.decode()
 

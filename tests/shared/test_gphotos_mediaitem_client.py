@@ -12,6 +12,7 @@ from sharded_google_photos.shared.testing.mocked_saved_credentials_file import (
 MOCK_NEW_MEDIA_ITEMS_RESPONSE = {
     "newMediaItemResults": [
         {
+            "status": {"message": "Success"},
             "mediaItem": {
                 "id": "1",
                 "description": "item-description",
@@ -24,9 +25,10 @@ MOCK_NEW_MEDIA_ITEMS_RESPONSE = {
                     "photo": {},
                 },
                 "filename": "filename",
-            }
+            },
         },
         {
+            "status": {"message": "Success"},
             "mediaItem": {
                 "id": "2",
                 "description": "item-description",
@@ -39,9 +41,10 @@ MOCK_NEW_MEDIA_ITEMS_RESPONSE = {
                     "photo": {},
                 },
                 "filename": "filename",
-            }
+            },
         },
         {
+            "status": {"message": "Success"},
             "mediaItem": {
                 "id": "3",
                 "description": "item-description",
@@ -54,7 +57,7 @@ MOCK_NEW_MEDIA_ITEMS_RESPONSE = {
                     "photo": {},
                 },
                 "filename": "filename",
-            }
+            },
         },
     ]
 }
@@ -83,7 +86,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
     def test_add_uploaded_photos_to_gphotos__2xx__returns_new_media_items(self):
 
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
                 json=MOCK_NEW_MEDIA_ITEMS_RESPONSE,
@@ -96,11 +99,120 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
             self.assertEqual(response, MOCK_NEW_MEDIA_ITEMS_RESPONSE)
 
+    def test_add_uploaded_photos_to_gphotos__media_item_is_duplicated__returns_unique_media_items(
+        self,
+    ):
+        mock_response = {
+            "newMediaItemResults": [
+                {
+                    "status": {"message": "Success"},
+                    "mediaItem": {
+                        "id": "1",
+                        "description": "item-description",
+                        "productUrl": "https://photos.google.com/photo/photo-path",
+                        "mimeType": "mime-type",
+                        "mediaMetadata": {
+                            "width": "media-width-in-px",
+                            "height": "media-height-in-px",
+                            "creationTime": "creation-time",
+                            "photo": {},
+                        },
+                        "filename": "filename",
+                    },
+                },
+                {
+                    "status": {
+                        "code": 6,
+                        "message": "Failed to add media item: duplicate item",
+                    },
+                    "mediaItem": {
+                        "id": "1",
+                        "description": "item-description",
+                        "productUrl": "https://photos.google.com/photo/photo-path",
+                        "mimeType": "mime-type",
+                        "mediaMetadata": {
+                            "width": "media-width-in-px",
+                            "height": "media-height-in-px",
+                            "creationTime": "creation-time",
+                            "photo": {},
+                        },
+                        "filename": "filename",
+                    },
+                },
+                {
+                    "status": {"message": "Success"},
+                    "mediaItem": {
+                        "id": "2",
+                        "description": "item-description",
+                        "productUrl": "https://photos.google.com/photo/photo-path",
+                        "mimeType": "mime-type",
+                        "mediaMetadata": {
+                            "width": "media-width-in-px",
+                            "height": "media-height-in-px",
+                            "creationTime": "creation-time",
+                            "photo": {},
+                        },
+                        "filename": "filename",
+                    },
+                },
+            ]
+        }
+
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            request_mocker.post(
+                "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
+                json=mock_response,
+            )
+
+            client.authenticate()
+            response = client.media_items().add_uploaded_photos_to_gphotos(
+                ["u1", "u2", "u3"], "123"
+            )
+
+            expected_response = {
+                "newMediaItemResults": [
+                    {
+                        "status": {"message": "Success"},
+                        "mediaItem": {
+                            "id": "1",
+                            "description": "item-description",
+                            "productUrl": "https://photos.google.com/photo/photo-path",
+                            "mimeType": "mime-type",
+                            "mediaMetadata": {
+                                "width": "media-width-in-px",
+                                "height": "media-height-in-px",
+                                "creationTime": "creation-time",
+                                "photo": {},
+                            },
+                            "filename": "filename",
+                        },
+                    },
+                    {
+                        "status": {"message": "Success"},
+                        "mediaItem": {
+                            "id": "2",
+                            "description": "item-description",
+                            "productUrl": "https://photos.google.com/photo/photo-path",
+                            "mimeType": "mime-type",
+                            "mediaMetadata": {
+                                "width": "media-width-in-px",
+                                "height": "media-height-in-px",
+                                "creationTime": "creation-time",
+                                "photo": {},
+                            },
+                            "filename": "filename",
+                        },
+                    },
+                ]
+            }
+            self.assertEqual(response, expected_response)
+
     def test_add_uploaded_photos_to_gphotos__first_call_returns_5xx_second_call_returns_2xx__retries_and_returns_response(
         self,
     ):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.register_uri(
                 "POST",
                 "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
@@ -122,7 +234,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
     def test_upload_photo__2xx__returns_upload_token(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/uploads",
                 text="u1",
@@ -139,7 +251,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
         self,
     ):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.register_uri(
                 "POST",
                 "https://photoslibrary.googleapis.com/v1/uploads",
@@ -158,7 +270,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
     def test_search_for_media_items__2xx__returns_media_items(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/mediaItems:search",
                 json=MOCK_GET_MEDIA_ITEMS_RESPONSE,
@@ -173,7 +285,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
         self,
     ):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.register_uri(
                 "POST",
                 "https://photoslibrary.googleapis.com/v1/mediaItems:search",
@@ -208,7 +320,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
             )
             request_mocker.post(upload_url, status_code=200, text="1234-upload-token")
 
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             client.authenticate()
             upload_token = client.media_items().upload_photo_in_chunks(
                 photo_file_path="./tests/shared/resources/small-image.jpg",
@@ -277,7 +389,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
             request_mocker.register_uri("POST", upload_url, text=text_callback)
 
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             client.authenticate()
             upload_token = client.media_items().upload_photo_in_chunks(
                 photo_file_path="./tests/shared/resources/small-image.jpg",
