@@ -77,13 +77,7 @@ class GPhotosMediaItemClient:
             "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
             create_body,
         )
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(f"Failed to batch create: {res.status_code} {res.content}")
-
+        res.raise_for_status()
         res_json = res.json()
 
         logger.debug(f"{res_json}")
@@ -113,23 +107,18 @@ class GPhotosMediaItemClient:
         page_token = None
         media_items = []
         while True:
-            response = self._search_media_items_in_pages(
+            res = self._search_media_items_in_pages(
                 album_id, filters, order_by, page_token
             )
-            if response.status_code != 200:
-                raise Exception(
-                    f"Fetching media items failed: {response.status_code} {response.content}"
-                )
+            res_body = res.json()
 
-            response_body = response.json()
-
-            if "mediaItems" not in response_body:
+            if "mediaItems" not in res_body:
                 break
 
-            media_items += response_body["mediaItems"]
+            media_items += res_body["mediaItems"]
 
-            if "nextPageToken" in response_body:
-                page_token = response_body["nextPageToken"]
+            if "nextPageToken" in res_body:
+                page_token = res_body["nextPageToken"]
             else:
                 break
 
@@ -154,8 +143,7 @@ class GPhotosMediaItemClient:
                 }
             ),
         )
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
         return res
 
     @backoff.on_exception(backoff.expo, (RequestException))
@@ -172,13 +160,7 @@ class GPhotosMediaItemClient:
         res = self._session.post(
             "https://photoslibrary.googleapis.com/v1/uploads", photo_bytes
         )
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200 or not res.content:
-            raise IllegalStateException(
-                f"No valid upload token {res.status_code} {res.content}"
-            )
+        res.raise_for_status()
 
         return res.content.decode()
 
@@ -193,11 +175,6 @@ class GPhotosMediaItemClient:
         )
 
         res_1 = self._initialize_chunked_upload(mime_type, file_size_in_bytes)
-        if res_1.status_code != 200:
-            raise Exception(
-                f"Unable to initialize chunked upload: {res_1.status_code} {res_1.content}"
-            )
-
         upload_url = res_1.headers["X-Goog-Upload-URL"]
         chunk_size = int(res_1.headers["X-Goog-Upload-Chunk-Granularity"])
 
@@ -257,8 +234,7 @@ class GPhotosMediaItemClient:
         self._session.headers["X-Goog-Upload-Raw-Size"] = str(file_size_in_bytes)
 
         res = self._session.post("https://photoslibrary.googleapis.com/v1/uploads")
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res
 
@@ -282,8 +258,7 @@ class GPhotosMediaItemClient:
         self._session.headers["X-Goog-Upload-Command"] = "query"
 
         res = self._session.post(upload_url)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res
 

@@ -4,8 +4,6 @@ import backoff
 from requests.exceptions import RequestException
 
 from google.auth.transport.requests import AuthorizedSession
-from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
-
 
 logger = logging.getLogger(__name__)
 
@@ -20,24 +18,18 @@ class GPhotosAlbumClient:
         albums = []
         cur_page_token = None
         while True:
-            response = self._list_shared_albums_in_pages(
+            res = self._list_shared_albums_in_pages(
                 cur_page_token, exclude_non_app_created_data
             )
+            res_body = res.json()
 
-            if response.status_code != 200:
-                raise Exception(
-                    f"Fetching albums failed: {response.status_code} {response.content}"
-                )
-
-            response_body = response.json()
-
-            if "sharedAlbums" not in response_body:
+            if "sharedAlbums" not in res_body:
                 break
 
-            albums += response_body["sharedAlbums"]
+            albums += res_body["sharedAlbums"]
 
-            if "nextPageToken" in response_body:
-                cur_page_token = response_body["nextPageToken"]
+            if "nextPageToken" in res_body:
+                cur_page_token = res_body["nextPageToken"]
             else:
                 break
 
@@ -53,8 +45,7 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
         return res
 
     def list_albums(self, exclude_non_app_created_data: bool = False):
@@ -63,24 +54,18 @@ class GPhotosAlbumClient:
         albums = []
         cur_page_token = None
         while True:
-            response = self._list_albums_in_pages(
+            res = self._list_albums_in_pages(
                 cur_page_token, exclude_non_app_created_data
             )
+            res_json = res.json()
 
-            if response.status_code != 200:
-                raise Exception(
-                    f"Fetching albums failed: {response.status_code} {response.content}"
-                )
-
-            response_body = response.json()
-
-            if "albums" not in response_body:
+            if "albums" not in res_json:
                 break
 
-            albums += response_body["albums"]
+            albums += res_json["albums"]
 
-            if "nextPageToken" in response_body:
-                cur_page_token = response_body["nextPageToken"]
+            if "nextPageToken" in res_json:
+                cur_page_token = res_json["nextPageToken"]
             else:
                 break
 
@@ -96,8 +81,8 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
+
         return res
 
     @backoff.on_exception(backoff.expo, (RequestException))
@@ -107,14 +92,7 @@ class GPhotosAlbumClient:
         request_body = json.dumps({"album": {"title": album_name}})
         uri = "https://photoslibrary.googleapis.com/v1/albums"
         res = self._session.post(uri, request_body)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(
-                f"Creating album {album_name} failed: {res.status_code} {res.content}"
-            )
+        res.raise_for_status()
 
         return res.json()
 
@@ -133,12 +111,7 @@ class GPhotosAlbumClient:
 
         request = {"title": new_title, "coverPhotoMediaItemId": new_cover_media_item_id}
         res = self._session.patch(uri, json.dumps(request))
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(f"Failed to rename album: {res.status_code} {res.content}")
+        res.raise_for_status()
 
         return res.json()
 
@@ -163,12 +136,7 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(f"Failed to share album: {res.status_code} {res.content}")
+        res.raise_for_status()
 
         return res.json()
 
@@ -179,12 +147,7 @@ class GPhotosAlbumClient:
         request_body = json.dumps({"shareToken": share_token})
         uri = "https://photoslibrary.googleapis.com/v1/sharedAlbums:join"
         res = self._session.post(uri, request_body)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(f"Failed to join album: {res.status_code} {res.content}")
+        res.raise_for_status()
 
         return res.json()
 
@@ -196,12 +159,7 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(f"Failed to unshare album: {res.status_code} {res.content}")
+        res.raise_for_status()
 
     @backoff.on_exception(backoff.expo, (RequestException))
     def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
@@ -212,14 +170,7 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(
-                f"Failed to add photos to an album: {res.status_code} {res.content}"
-            )
+        res.raise_for_status()
 
     @backoff.on_exception(backoff.expo, (RequestException))
     def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
@@ -230,11 +181,4 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200:
-            raise Exception(
-                f"Failed to remove photos from album: {res.status_code} {res.content}"
-            )
+        res.raise_for_status()
