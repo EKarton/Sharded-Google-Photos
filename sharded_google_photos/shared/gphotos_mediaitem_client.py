@@ -1,14 +1,52 @@
 import json
 import logging
-import mimetypes
 import os
 import backoff
-from requests.exceptions import RequestException
+import magic
+from requests.exceptions import RequestException, HTTPError
 
 from google.auth.transport.requests import AuthorizedSession
 from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_RETRYABLE_ERROR_CODES_FOR_UPLOADED_PHOTOS = set(
+    [
+        1,  # Cancelled
+        2,  # Unknown
+        4,  # DEADLINE_EXCEEDED,
+        10,  # 409 Conflict
+        12,  # 501 Not Implemented
+        13,  # 500 Internal Server Error
+        14,  # 503 Service Unavailable
+        15,  # 500 Internal Server Error
+    ]
+)
+
+ERROR_CODES_FOR_UPLOADED_PHOTOS_TO_MESSAGE = {
+    1: "Cancelled",
+    2: "UNKNOWN",
+    3: "INVALID_ARGUMENT",
+    4: "DEADLINE_EXCEEDED",
+    5: "NOT_FOUND",
+    7: "PERMISSION_DENIED",
+    8: "RESOURCE_EXHAUSTED",
+    9: "FAILED_PRECONDITION",
+    10: "ABORTED",
+    11: "OUT_OF_RANGE",
+    12: "UNIMPLEMENTED",
+    13: "INTERNAL",
+    14: "UNAVAILABLE",
+    15: "DATA_LOSS",
+    16: "UNAUTHENTICATED",
+}
+
+
+class IllegalStateException(ValueError):
+    """Exception raised when the state is invalid"""
+
+    def __init__(self, message: str):
+        super().__init__(message)
 
 
 class GPhotosMediaItemClient:
@@ -39,14 +77,27 @@ class GPhotosMediaItemClient:
             "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
             create_body,
         )
+        res.raise_for_status()
+        res_json = res.json()
 
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        logger.debug(f"{res_json}")
 
-        if res.status_code != 200:
-            raise Exception(f"Failed to batch create: {res.status_code} {res.content}")
+        new_media_items = []
+        for result in res_json["newMediaItemResults"]:
+            if result["status"]["message"] == "Success":
+                new_media_items.append(result)
+            else:
+                code = result["status"]["code"]
+                message = result["status"]["message"]
 
-        return res.json()
+                if code == 6:
+                    continue
+                elif code in DEFAULT_RETRYABLE_ERROR_CODES_FOR_UPLOADED_PHOTOS:
+                    raise HTTPError(f"code: {code}, message: {message}")
+                else:
+                    raise ValueError(f"code: {code}, message: {message}")
+
+        return {"newMediaItemResults": new_media_items}
 
     def search_for_media_items(
         self, album_id: str = None, filters: str = None, order_by: str = None
@@ -56,23 +107,18 @@ class GPhotosMediaItemClient:
         page_token = None
         media_items = []
         while True:
-            response = self._search_media_items_in_pages(
+            res = self._search_media_items_in_pages(
                 album_id, filters, order_by, page_token
             )
-            if response.status_code != 200:
-                raise Exception(
-                    f"Fetching media items failed: {response.status_code} {response.content}"
-                )
+            res_body = res.json()
 
-            response_body = response.json()
-
-            if "mediaItems" not in response_body:
+            if "mediaItems" not in res_body:
                 break
 
-            media_items += response_body["mediaItems"]
+            media_items += res_body["mediaItems"]
 
-            if "nextPageToken" in response_body:
-                page_token = response_body["nextPageToken"]
+            if "nextPageToken" in res_body:
+                page_token = res_body["nextPageToken"]
             else:
                 break
 
@@ -97,22 +143,15 @@ class GPhotosMediaItemClient:
                 }
             ),
         )
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
         return res
 
     @backoff.on_exception(backoff.expo, (RequestException))
     def upload_photo(self, photo_file_path: str, file_name: str):
         logger.debug(f"Uploading photo {photo_file_path}")
 
-        try:
-            photo_file = open(photo_file_path, mode="rb")
-            photo_bytes = photo_file.read()
-        except OSError as err:
-            logger.error(
-                "Could not read file '{0}' -- {1}".format(photo_file_path, err)
-            )
-            return
+        photo_file = open(photo_file_path, mode="rb")
+        photo_bytes = photo_file.read()
 
         self._session.headers["Content-type"] = "application/octet-stream"
         self._session.headers["X-Goog-Upload-Protocol"] = "raw"
@@ -121,18 +160,14 @@ class GPhotosMediaItemClient:
         res = self._session.post(
             "https://photoslibrary.googleapis.com/v1/uploads", photo_bytes
         )
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        if res.status_code != 200 or not res.content:
-            logger.error(f"No valid upload token {res.status_code} {res.content}")
-            return
+        res.raise_for_status()
 
         return res.content.decode()
 
+    @backoff.on_exception(backoff.expo, (IllegalStateException))
     def upload_photo_in_chunks(self, photo_file_path: str, file_name: str):
         upload_token = None
-        mime_type, _ = mimetypes.guess_type(photo_file_path)
+        mime_type = self._get_mime_type(photo_file_path)
         file_size_in_bytes = os.stat(photo_file_path).st_size
 
         logger.debug(
@@ -140,11 +175,6 @@ class GPhotosMediaItemClient:
         )
 
         res_1 = self._initialize_chunked_upload(mime_type, file_size_in_bytes)
-        if res_1.status_code != 200:
-            raise Exception(
-                f"Unable to initialize chunked upload: {res_1.status_code} {res_1.content}"
-            )
-
         upload_url = res_1.headers["X-Goog-Upload-URL"]
         chunk_size = int(res_1.headers["X-Goog-Upload-Chunk-Granularity"])
 
@@ -178,7 +208,7 @@ class GPhotosMediaItemClient:
                     size_received = int(req_3.headers["X-Goog-Upload-Size-Received"])
 
                     if upload_status != "active":
-                        raise Exception("Upload is no longer active")
+                        raise IllegalStateException("Upload is no longer active")
 
                     logger.debug(f"Adjusted seek to {size_received}")
                     file_obj.seek(size_received, 0)
@@ -204,8 +234,7 @@ class GPhotosMediaItemClient:
         self._session.headers["X-Goog-Upload-Raw-Size"] = str(file_size_in_bytes)
 
         res = self._session.post("https://photoslibrary.googleapis.com/v1/uploads")
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res
 
@@ -229,7 +258,9 @@ class GPhotosMediaItemClient:
         self._session.headers["X-Goog-Upload-Command"] = "query"
 
         res = self._session.post(upload_url)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res
+
+    def _get_mime_type(self, file_path):
+        return magic.from_file(file_path, mime=True)

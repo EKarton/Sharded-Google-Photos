@@ -24,6 +24,7 @@ class GPhotosClientTests(unittest.TestCase):
 
             with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as tmpFile:
                 client = GPhotosClient(
+                    name="bob@gmail.com",
                     creds_file=tmpFile.name,
                     client_secret="123.json",
                 )
@@ -56,6 +57,7 @@ class GPhotosClientTests(unittest.TestCase):
             json.dump(fileData, tmpFile)
             tmpFile.flush()
             client = GPhotosClient(
+                name="bob@gmail.com",
                 creds_file=tmpFile.name,
                 client_secret="123.json",
             )
@@ -78,7 +80,7 @@ class GPhotosClientTests(unittest.TestCase):
             }
         }
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.get(
                 "https://www.googleapis.com/drive/v3/about",
                 json=mock_response,

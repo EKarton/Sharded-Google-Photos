@@ -32,7 +32,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             },
         ]
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.get(
                 "https://photoslibrary.googleapis.com/v1/sharedAlbums?excludeNonAppCreatedData=False",
                 json={"sharedAlbums": [albums[0]], "nextPageToken": "a"},
@@ -71,7 +71,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             },
         ]
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.get(
                 "https://photoslibrary.googleapis.com/v1/albums?excludeNonAppCreatedData=False",
                 json={"albums": [albums[0]], "nextPageToken": "a"},
@@ -98,7 +98,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             "coverPhotoMediaItemId": "1",
         }
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/albums", json=mock_response
             )
@@ -126,7 +126,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             }
         }
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/albums/123:share",
                 json=mock_response,
@@ -164,7 +164,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             }
         }
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/sharedAlbums:join",
                 json=mock_response,
@@ -180,7 +180,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
 
     def test_unshare_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/albums/123:unshare",
                 json={},
@@ -196,7 +196,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
 
     def test_add_photos_to_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/albums/123:batchAddMediaItems",
                 json={},
@@ -212,7 +212,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
 
     def test_remove_photos_from_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.post(
                 "https://photoslibrary.googleapis.com/v1/albums/123:batchRemoveMediaItems",
                 json={},
@@ -238,7 +238,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
         }
 
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.patch(
                 "https://photoslibrary.googleapis.com/v1/albums/123?updateMask=title",
                 json=mock_response,
@@ -261,7 +261,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
         }
 
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.patch(
                 "https://photoslibrary.googleapis.com/v1/albums/123?updateMask=coverPhotoMediaItemId",
                 json=mock_response,
@@ -286,7 +286,7 @@ class GPhotosAlbumClientTests(unittest.TestCase):
         }
 
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
-            client = GPhotosClient(creds_file_path, "123.json")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             request_mocker.patch(
                 "https://photoslibrary.googleapis.com/v1/albums/123?updateMask=title&updateMask=coverPhotoMediaItemId",
                 json=mock_response,
