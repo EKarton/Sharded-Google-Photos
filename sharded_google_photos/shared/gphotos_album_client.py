@@ -4,6 +4,7 @@ import backoff
 from requests.exceptions import RequestException
 
 from google.auth.transport.requests import AuthorizedSession
+from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,9 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
+
         return res
 
     def list_albums(self, exclude_non_app_created_data: bool = False):
@@ -81,7 +84,8 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
         return res
 
@@ -111,7 +115,8 @@ class GPhotosAlbumClient:
 
         request = {"title": new_title, "coverPhotoMediaItemId": new_cover_media_item_id}
         res = self._session.patch(uri, json.dumps(request))
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
         return res.json()
 
@@ -136,7 +141,8 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
         return res.json()
 
@@ -147,7 +153,8 @@ class GPhotosAlbumClient:
         request_body = json.dumps({"shareToken": share_token})
         uri = "https://photoslibrary.googleapis.com/v1/sharedAlbums:join"
         res = self._session.post(uri, request_body)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
         return res.json()
 
@@ -159,7 +166,8 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
     @backoff.on_exception(backoff.expo, (RequestException))
     def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
@@ -170,7 +178,8 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
 
     @backoff.on_exception(backoff.expo, (RequestException))
     def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
@@ -181,4 +190,5 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
