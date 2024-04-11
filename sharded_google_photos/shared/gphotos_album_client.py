@@ -9,6 +9,10 @@ from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
 logger = logging.getLogger(__name__)
 
 
+def fatal_code(e):
+    return e.response.status_code not in DEFAULT_RETRYABLE_STATUS_CODES
+
+
 class GPhotosAlbumClient:
     def __init__(self, session: AuthorizedSession):
         self._session = session
@@ -19,10 +23,9 @@ class GPhotosAlbumClient:
         albums = []
         cur_page_token = None
         while True:
-            res = self._list_shared_albums_in_pages(
+            res_body = self._list_shared_albums_in_pages(
                 cur_page_token, exclude_non_app_created_data
             )
-            res_body = res.json()
 
             if "sharedAlbums" not in res_body:
                 break
@@ -36,7 +39,7 @@ class GPhotosAlbumClient:
 
         return albums
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def _list_shared_albums_in_pages(
         self, page_token: str | None, exclude_non_app_created_data: bool
     ):
@@ -46,10 +49,9 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
-        return res
+        return res.json()
 
     def list_albums(self, exclude_non_app_created_data: bool = False):
         logger.debug("Listing albums")
@@ -57,10 +59,9 @@ class GPhotosAlbumClient:
         albums = []
         cur_page_token = None
         while True:
-            res = self._list_albums_in_pages(
+            res_json = self._list_albums_in_pages(
                 cur_page_token, exclude_non_app_created_data
             )
-            res_json = res.json()
 
             if "albums" not in res_json:
                 break
@@ -74,7 +75,7 @@ class GPhotosAlbumClient:
 
         return albums
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def _list_albums_in_pages(
         self, page_token: str | None, exclude_non_app_created_data: bool
     ):
@@ -84,12 +85,10 @@ class GPhotosAlbumClient:
             "excludeNonAppCreatedData": exclude_non_app_created_data,
         }
         res = self._session.get(uri, params=params)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
+        return res.json()
 
-        return res
-
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def create_album(self, album_name: str):
         logger.debug(f"Creating album {album_name}")
 
@@ -100,7 +99,7 @@ class GPhotosAlbumClient:
 
         return res.json()
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def update_album(
         self, album_id: str, new_title: str = None, new_cover_media_item_id: str = None
     ):
@@ -115,12 +114,11 @@ class GPhotosAlbumClient:
 
         request = {"title": new_title, "coverPhotoMediaItemId": new_cover_media_item_id}
         res = self._session.patch(uri, json.dumps(request))
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res.json()
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def share_album(
         self,
         album_id: str,
@@ -141,24 +139,22 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res.json()
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def join_album(self, share_token: str):
         logger.debug(f"Joining shared album {share_token}")
 
         request_body = json.dumps({"shareToken": share_token})
         uri = "https://photoslibrary.googleapis.com/v1/sharedAlbums:join"
         res = self._session.post(uri, request_body)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
         return res.json()
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def unshare_album(self, album_id: str):
         logger.debug(f"Unsharing shared album {album_id}")
 
@@ -166,12 +162,9 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
-        return res
-
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Add photos to album {album_id} {media_item_ids}")
 
@@ -180,12 +173,9 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
+        res.raise_for_status()
 
-        return res
-
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Removing photos from album {album_id} {media_item_ids}")
 
@@ -194,7 +184,4 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
-            res.raise_for_status()
-
-        return res
+        res.raise_for_status()
