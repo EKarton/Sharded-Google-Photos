@@ -42,6 +42,8 @@ class MediaItemRepository:
         return len(self.media_id_to_obj)
 
     def remove_media_items(self, media_ids):
+        MAX_REMOVE_ITEMS_LENGTH_PER_CALL = 50
+
         if len(media_ids) == 0:
             return
 
@@ -53,7 +55,11 @@ class MediaItemRepository:
             del self.media_id_to_obj[media_id]
             del self.file_name_to_media_ids[media_item["filename"]]
 
-        self.gphoto_client.albums().remove_photos_from_album(self.album_id, media_ids)
+        for i in range(0, len(media_ids), MAX_REMOVE_ITEMS_LENGTH_PER_CALL):
+            chunked_media_ids = media_ids[i : i + MAX_REMOVE_ITEMS_LENGTH_PER_CALL]
+            self.gphoto_client.albums().remove_photos_from_album(
+                self.album_id, chunked_media_ids
+            )
 
         logger.debug(f"Media items removed from album {self.album_id}: {media_ids}")
 

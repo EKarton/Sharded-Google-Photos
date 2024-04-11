@@ -6,7 +6,7 @@ Running out of space in your Google Photos account? Wish you can upload an unlim
 
 It works like this:
 
-1. Let's say you have three Google Accounts.
+1. Let's say you have three Google Accounts. Create an OAuth2 to interact with Google Photos and Google Drive.
 
 2. Install `libmagic`
 
@@ -32,14 +32,14 @@ It works like this:
 5. To upload four photos from two folders, run the following:
 
     ```python
-    new_album_uris = backup_client.backup([
-        {
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/2.jpg",
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/3.jpg",
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/4.jpg",
-        }
-    ])
+    new_album_uris = backup_client.backup(
+        [
+            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/2.jpg" },
+            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/3.jpg" },
+            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/4.jpg" },
+        ]
+    )
     print(new_album_uris)
     ```
 
@@ -53,27 +53,29 @@ It works like this:
 
     4. Photos `3.jpg`, and `4.jpg` will be in the `Archives/Photos/2022/Trip to Toronto` album.
 
-    3. The url to those new albums will be in `new_album_uris` that you can share to.
+    5. The url to those new albums will be in `new_album_uris` that you can share to.
 
 6. To update a file in a folder, run the following:
 
     ```python
-    backup_client.backup([
-        {
-            "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
-            "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
-        }
-    ])
+    backup_client.backup(
+        [
+            { "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+        ]
+    )
     ```
 
 7. To delete a file in a folder, run the following:
 
     ```python
-    backup_client.backup([
-        {
-            "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
-        }
-    ])
+    backup_client.backup(
+        [
+            {
+                "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
+            }
+        ]
+    )
     ```
 
     Note: it is not possible for the Google Photos API to actually delete a photo from Google Photos. Instead, you can clean your Google Photo accounts by putting all album-less photos into a "Trash" album by running the following script:

@@ -11,6 +11,16 @@ from .gphotos_uploader import GPhotosUploader
 logger = logging.getLogger(__name__)
 
 
+class NoAvailableSpaceInExistingAlbumException(Exception):
+    """Exception raised when there is no space in an existing album"""
+
+    def __init__(self, client_idx: int, album_id: str, album_title: str):
+        super().__init__(f"Need to move {album_title} out of {client_idx}")
+        self.client_idx = client_idx
+        self.album_id = album_id
+        self.album_title = album_title
+
+
 class GPhotosBackup:
     def __init__(self, gphoto_clients: list[GPhotosClient]):
         self.gphoto_clients = gphoto_clients
@@ -137,7 +147,9 @@ class GPhotosBackup:
             client_idx = album["client_idx"]
 
             if space_remaining[client_idx] - space_needed <= 0:
-                raise Exception(f"Need to move {album_title} out of {client_idx}")
+                raise NoAvailableSpaceInExistingAlbumException(
+                    client_idx, album["id"], album_title
+                )
 
             space_remaining[client_idx] -= space_needed
             results[album_title] = {
