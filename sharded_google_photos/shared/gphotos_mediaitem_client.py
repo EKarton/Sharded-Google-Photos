@@ -174,7 +174,9 @@ class GPhotosMediaItemClient:
             f"Uploading in chunks with mime_type {mime_type} and file size {file_size_in_bytes}"
         )
 
-        res_1 = self._initialize_chunked_upload(mime_type, file_size_in_bytes)
+        res_1 = self._initialize_chunked_upload(
+            mime_type, file_name, file_size_in_bytes
+        )
         upload_url = res_1.headers["X-Goog-Upload-URL"]
         chunk_size = int(res_1.headers["X-Goog-Upload-Chunk-Granularity"])
 
@@ -226,11 +228,14 @@ class GPhotosMediaItemClient:
         return upload_token
 
     @backoff.on_exception(backoff.expo, (RequestException))
-    def _initialize_chunked_upload(self, mime_type: str, file_size_in_bytes: int):
+    def _initialize_chunked_upload(
+        self, mime_type: str, file_name: str, file_size_in_bytes: int
+    ):
         self._session.headers["Content-Length"] = "0"
         self._session.headers["X-Goog-Upload-Command"] = "start"
         self._session.headers["X-Goog-Upload-Content-Type"] = mime_type
         self._session.headers["X-Goog-Upload-Protocol"] = "resumable"
+        self._session.headers["X-Goog-Upload-File-Name"] = file_name
         self._session.headers["X-Goog-Upload-Raw-Size"] = str(file_size_in_bytes)
 
         res = self._session.post("https://photoslibrary.googleapis.com/v1/uploads")
