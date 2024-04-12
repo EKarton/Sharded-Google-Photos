@@ -43,6 +43,10 @@ class GPhotosBackup:
             shared_album_repository, chunked_new_diffs
         )
         logger.debug("Step 4: Assigned albums to diffs")
+        for album_title in chunked_new_diffs:
+            client_idx = assigned_albums[album_title]["client_idx"]
+            client = self.gphoto_clients[client_idx]
+            logger.debug(f"{album_title} -> {client.name} ({client_idx})")
 
         # Handle each folder one by one
         for album_title in chunked_new_diffs:

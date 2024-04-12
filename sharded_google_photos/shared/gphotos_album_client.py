@@ -143,29 +143,46 @@ class GPhotosAlbumClient:
 
         return res.json()
 
-    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
     def join_album(self, share_token: str):
+        res = self.__join_album(share_token)
+        res.raise_for_status()
+        return res.json()
+
+    @backoff.on_exception(backoff.expo, (RequestException))
+    def __join_album(self, share_token: str):
         logger.debug(f"Joining shared album {share_token}")
 
         request_body = json.dumps({"shareToken": share_token})
         uri = "https://photoslibrary.googleapis.com/v1/sharedAlbums:join"
         res = self._session.post(uri, request_body)
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
+
+        return res
+
+    def unshare_album(self, album_id: str):
+        res = self.__unshare_album(album_id)
         res.raise_for_status()
 
-        return res.json()
-
-    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
-    def unshare_album(self, album_id: str):
+    @backoff.on_exception(backoff.expo, (RequestException))
+    def __unshare_album(self, album_id: str):
         logger.debug(f"Unsharing shared album {album_id}")
 
         uri = "https://photoslibrary.googleapis.com/v1/albums/{0}:unshare".format(
             album_id
         )
         res = self._session.post(uri)
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
+
+        return res
+
+    def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
+        res = self.__add_photos_to_album(album_id, media_item_ids)
         res.raise_for_status()
 
-    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
-    def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
+    @backoff.on_exception(backoff.expo, (RequestException))
+    def __add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Add photos to album {album_id} {media_item_ids}")
 
         request_body = json.dumps({"mediaItemIds": media_item_ids})
@@ -173,10 +190,19 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
+
+        return res
+
+    def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
+        res = self.__remove_photos_from_album(album_id, media_item_ids)
         res.raise_for_status()
 
-    @backoff.on_exception(backoff.expo, (RequestException), giveup=fatal_code)
-    def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
+        return res
+
+    @backoff.on_exception(backoff.expo, (RequestException))
+    def __remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Removing photos from album {album_id} {media_item_ids}")
 
         request_body = json.dumps({"mediaItemIds": media_item_ids})
@@ -184,4 +210,7 @@ class GPhotosAlbumClient:
             album_id
         )
         res = self._session.post(uri, request_body)
-        res.raise_for_status()
+        if res.status_code in DEFAULT_RETRYABLE_STATUS_CODES:
+            res.raise_for_status()
+
+        return res
