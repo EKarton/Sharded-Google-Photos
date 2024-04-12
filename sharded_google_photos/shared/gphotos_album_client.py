@@ -187,8 +187,6 @@ class GPhotosAlbumClient:
         res = self._session.post(uri)
         raise_for_status(res)
 
-        return res
-
     @backoff.on_exception(backoff.expo, (RetryableRequestException))
     def add_photos_to_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Add photos to album {album_id} {media_item_ids}")
@@ -200,8 +198,6 @@ class GPhotosAlbumClient:
         res = self._session.post(uri, request_body)
         raise_for_status(res)
 
-        return res
-
     @backoff.on_exception(backoff.expo, (RetryableRequestException))
     def remove_photos_from_album(self, album_id: str, media_item_ids: list[str]):
         logger.debug(f"Removing photos from album {album_id} {media_item_ids}")
@@ -212,8 +208,6 @@ class GPhotosAlbumClient:
         )
         res = self._session.post(uri, request_body)
         raise_for_status(res)
-
-        return res
 
 
 def raise_for_status(res):
