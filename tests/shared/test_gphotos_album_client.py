@@ -207,8 +207,19 @@ class GPhotosAlbumClientTests(unittest.TestCase):
 
             self.assertEqual(response, None)
 
-    def test_add_photos_to_album__5xx__throws_exception(self):
-        pass
+    def test_add_photos_to_album__only_5xx__throws_exception(self):
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            request_mocker.post(
+                "https://photoslibrary.googleapis.com/v1/albums/123:batchAddMediaItems",
+                status_code=500,
+            )
+
+            client.authenticate()
+
+            expectedException = "500 Server Error: None for url: https://photoslibrary.googleapis.com/v1/albums/123:batchAddMediaItems"
+            with self.assertRaisesRegex(Exception, expectedException):
+                client.albums().add_photos_to_album("123", ["1", "2", "3"])
 
     def test_remove_photos_from_album__2xx__returns_nothing(self):
         with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
@@ -224,7 +235,18 @@ class GPhotosAlbumClientTests(unittest.TestCase):
             self.assertEqual(response, None)
 
     def test_remove_photos_from_album_5xx_throws_exception(self):
-        pass
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            request_mocker.post(
+                "https://photoslibrary.googleapis.com/v1/albums/123:batchRemoveMediaItems",
+                status_code=500,
+            )
+
+            client.authenticate()
+
+            expectedException = "500 Server Error: None for url: https://photoslibrary.googleapis.com/v1/albums/123:batchRemoveMediaItems"
+            with self.assertRaisesRegex(Exception, expectedException):
+                client.albums().remove_photos_from_album("123", ["1", "2", "3"])
 
     def test_update_album__with_new_title__returns_nothing(self):
         mock_response = {
