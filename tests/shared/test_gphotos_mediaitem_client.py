@@ -2,10 +2,15 @@ import json
 import tempfile
 import unittest
 import requests_mock
+import contextlib
+from io import StringIO
 from freezegun import freeze_time
 
 
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
+from sharded_google_photos.shared.reporters.chunked_upload_reporter import (
+    ChunkedUploadReporter,
+)
 from sharded_google_photos.shared.testing.mocked_saved_credentials_file import (
     MockedSavedCredentialsFile,
 )
@@ -356,6 +361,38 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
             )
             self.assertEqual(req_13.headers["X-Goog-Upload-Offset"], "2580237")
 
+    def test_upload_photo_in_chunks__with_reporter__outputs_reporter_correctly(
+        self,
+    ):
+        get_upload_link_url = "https://photoslibrary.googleapis.com/v1/uploads"
+        upload_url = "https://photoslibrary.googleapis.com/v1/upload-url/1"
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            request_mocker.post(
+                get_upload_link_url,
+                status_code=200,
+                headers={
+                    "X-Goog-Upload-URL": upload_url,
+                    "X-Goog-Upload-Chunk-Granularity": "234567",
+                },
+                text="",
+            )
+            request_mocker.post(upload_url, status_code=200, text="1234-upload-token")
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            client.authenticate()
+
+            # Note: we capture stderr because tqdm outputs to stderr
+            temp_stderr = StringIO()
+            with contextlib.redirect_stderr(temp_stderr):
+                client.media_items().upload_photo_in_chunks(
+                    photo_file_path="./tests/shared/resources/small-image.jpg",
+                    file_name="small-image.jpg",
+                    reporter=ChunkedUploadReporter(
+                        position=1, description="small-image.jpg"
+                    ),
+                )
+
+            self.assertTrue("small-image.jpg: 100.0" in temp_stderr.getvalue().strip())
+
     @freeze_time("Jan 14th, 2020", auto_tick_seconds=10000)
     def test_upload_photo_in_chunks__uploading_middle_chunk_failed__makes_api_calls_correctly_and_returns_upload_token(
         self,
@@ -443,3 +480,66 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
                 req_15.headers["X-Goog-Upload-Command"], "upload, finalize"
             )
             self.assertEqual(req_15.headers["X-Goog-Upload-Offset"], "2580237")
+
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=10000)
+    def test_upload_photo_in_chunks__with_reporter_and_illegal_state_exception_thrown__outputs_reporter_correctly(
+        self,
+    ):
+        get_upload_link_url = "https://photoslibrary.googleapis.com/v1/uploads"
+        upload_url = "https://photoslibrary.googleapis.com/v1/upload-url/1"
+        upload_token = "1234-upload-token"
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            request_mocker.register_uri(
+                "POST",
+                get_upload_link_url,
+                status_code=200,
+                headers={
+                    "X-Goog-Upload-URL": upload_url,
+                    "X-Goog-Upload-Chunk-Granularity": "234567",
+                },
+                text="",
+            )
+
+            first_time_called = False
+            first_time_query_called = False
+
+            def post_upload_url_callback(request, context):
+                nonlocal first_time_called
+                nonlocal first_time_query_called
+
+                if request.headers["X-Goog-Upload-Command"] == "query":
+                    context.headers["X-Goog-Upload-Size-Received"] = "0"
+
+                    if not first_time_query_called:
+                        context.headers["X-Goog-Upload-Status"] = "active"
+                        first_time_query_called = True
+                    else:
+                        context.headers["X-Goog-Upload-Status"] = "inactive"
+                    context.status_code = 200
+                else:
+                    if not first_time_called:
+                        context.status_code = 400
+                        first_time_called = True
+                    else:
+                        context.status_code = 200
+                        context.text = upload_token
+
+            request_mocker.register_uri(
+                "POST", upload_url, text=post_upload_url_callback
+            )
+
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            client.authenticate()
+
+            # Note: we capture stderr because tqdm outputs to stderr
+            temp_stderr = StringIO()
+            with contextlib.redirect_stderr(temp_stderr):
+                client.media_items().upload_photo_in_chunks(
+                    photo_file_path="./tests/shared/resources/small-image.jpg",
+                    file_name="small-image.jpg",
+                    reporter=ChunkedUploadReporter(
+                        position=1, description="small-image.jpg"
+                    ),
+                )
+
+            self.assertTrue("small-image.jpg: 100.0" in temp_stderr.getvalue().strip())

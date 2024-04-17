@@ -8,6 +8,8 @@ from requests.exceptions import HTTPError, RequestException
 from google.auth.transport.requests import AuthorizedSession
 from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
 
+from .reporters.chunked_upload_reporter import ChunkedUploadReporter
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_RETRYABLE_ERROR_CODES_FOR_UPLOADED_PHOTOS = set(
@@ -165,7 +167,12 @@ class GPhotosMediaItemClient:
         return res.content.decode()
 
     @backoff.on_exception(backoff.expo, (IllegalStateException), max_time=60)
-    def upload_photo_in_chunks(self, photo_file_path: str, file_name: str):
+    def upload_photo_in_chunks(
+        self,
+        photo_file_path: str,
+        file_name: str,
+        reporter: ChunkedUploadReporter | None = None,
+    ):
         upload_token = None
         mime_type = self._get_mime_type(photo_file_path)
         file_size_in_bytes = os.stat(photo_file_path).st_size
@@ -182,6 +189,10 @@ class GPhotosMediaItemClient:
 
         logger.debug(f"Obtained upload url and chunk size: {upload_url} {chunk_size}")
 
+        if reporter is not None:
+            reporter.create_progress_bar()
+
+        num_bytes_uploaded = 0
         with open(photo_file_path, "rb") as file_obj:
             cur_offset = 0
             chunk = file_obj.read(chunk_size)
@@ -210,6 +221,8 @@ class GPhotosMediaItemClient:
                     size_received = int(req_3.headers["X-Goog-Upload-Size-Received"])
 
                     if upload_status != "active":
+                        if reporter is not None:
+                            reporter.close_progress_bar()
                         raise IllegalStateException("Upload is no longer active")
 
                     logger.debug(f"Adjusted seek to {size_received}")
@@ -218,6 +231,11 @@ class GPhotosMediaItemClient:
                     next_chunk = file_obj.read(chunk_size)
                 else:
                     cur_offset += chunk_read
+                    num_bytes_uploaded += chunk_read
+
+                    if reporter is not None:
+                        percentage = num_bytes_uploaded / file_size_in_bytes
+                        reporter.update_progress_bar(percentage)
 
                 if is_last_chunk:
                     upload_token = res_2.content.decode()
@@ -225,6 +243,10 @@ class GPhotosMediaItemClient:
                 chunk = next_chunk
 
         logger.debug(f"Chunk uploading finished: {photo_file_path}")
+
+        if reporter is not None:
+            reporter.close_progress_bar()
+
         return upload_token
 
     @backoff.on_exception(backoff.expo, (RequestException), max_time=60)

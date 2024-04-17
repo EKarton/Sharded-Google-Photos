@@ -115,6 +115,7 @@ class GPhotosBackup:
     def add_new_metadata(self, diffs):
         new_diffs = []
         for diff in diffs:
+            modifier = diff["modifier"]
             rel_path = diff["path"]
             abs_path = os.path.abspath(rel_path)
             album_title = os.path.dirname(rel_path)
@@ -123,11 +124,11 @@ class GPhotosBackup:
 
             new_diffs.append(
                 {
-                    "modifier": diff["modifier"],
+                    "modifier": modifier,
                     "album_title": album_title,
                     "file_name": os.path.basename(abs_path),
                     "abs_path": abs_path,
-                    "file_size_in_bytes": os.stat(abs_path).st_size,
+                    "file_size_in_bytes": 0 if modifier == "-" else os.stat(abs_path).st_size,
                 }
             )
         return new_diffs
