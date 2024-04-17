@@ -1,5 +1,7 @@
 import json
 import logging
+import backoff
+from requests.exceptions import RequestException
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import AuthorizedSession
@@ -101,17 +103,14 @@ class GPhotosClient:
 
         return iaflow.credentials
 
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def get_storage_quota(self):
         params = {"fields": "storageQuota"}
         uri = "https://www.googleapis.com/drive/v3/about"
-        response = self.session.get(uri, params=params)
+        res = self.session.get(uri, params=params)
+        res.raise_for_status()
 
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to get storage quota: {response.status_code} {response.content}"
-            )
-
-        return response.json()["storageQuota"]
+        return res.json()["storageQuota"]
 
     def albums(self):
         return self._albums_client

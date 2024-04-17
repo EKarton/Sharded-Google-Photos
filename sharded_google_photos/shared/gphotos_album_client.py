@@ -2,7 +2,6 @@ import json
 import logging
 import backoff
 from requests.exceptions import RequestException
-from requests import Response
 
 from google.auth.transport.requests import AuthorizedSession
 
@@ -181,7 +180,3 @@ class GPhotosAlbumClient:
         )
         res = self._session.post(uri, request_body)
         res.raise_for_status()
-
-
-def raise_for_status(res: Response):
-    res.raise_for_status()

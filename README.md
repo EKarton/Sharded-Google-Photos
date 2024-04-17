@@ -109,7 +109,7 @@ It works like this:
 4. To lint your code, run:
 
     ```bash
-    poetry run flake8 && poetry run black sharded_google_photos/
+    poetry run flake8 && poetry run black .
     ```
 
 5. To run tests and code coverage, run:
