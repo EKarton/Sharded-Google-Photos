@@ -3,7 +3,7 @@ import logging
 import os
 import backoff
 import magic
-from requests.exceptions import RequestException, HTTPError
+from requests.exceptions import HTTPError, RequestException
 
 from google.auth.transport.requests import AuthorizedSession
 from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
@@ -53,7 +53,7 @@ class GPhotosMediaItemClient:
     def __init__(self, session: AuthorizedSession):
         self._session = session
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def add_uploaded_photos_to_gphotos(
         self, upload_tokens: list[str], album_id: str = None
     ):
@@ -124,7 +124,7 @@ class GPhotosMediaItemClient:
 
         return media_items
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def _search_media_items_in_pages(
         self,
         album_id: str | None,
@@ -146,7 +146,7 @@ class GPhotosMediaItemClient:
         res.raise_for_status()
         return res
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def upload_photo(self, photo_file_path: str, file_name: str):
         logger.debug(f"Uploading photo {photo_file_path}")
 
@@ -164,14 +164,14 @@ class GPhotosMediaItemClient:
 
         return res.content.decode()
 
-    @backoff.on_exception(backoff.expo, (IllegalStateException))
+    @backoff.on_exception(backoff.expo, (IllegalStateException), max_time=60)
     def upload_photo_in_chunks(self, photo_file_path: str, file_name: str):
         upload_token = None
         mime_type = self._get_mime_type(photo_file_path)
         file_size_in_bytes = os.stat(photo_file_path).st_size
 
         logger.debug(
-            f"Uploading in chunks with mime_type {mime_type} and file size {file_size_in_bytes}"
+            f"Uploading {photo_file_path} in chunks ({mime_type}, {file_size_in_bytes} bytes)"
         )
 
         res_1 = self._initialize_chunked_upload(
@@ -227,7 +227,7 @@ class GPhotosMediaItemClient:
         logger.debug(f"Chunk uploading finished: {photo_file_path}")
         return upload_token
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def _initialize_chunked_upload(
         self, mime_type: str, file_name: str, file_size_in_bytes: int
     ):
@@ -243,7 +243,7 @@ class GPhotosMediaItemClient:
 
         return res
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def _upload_photo_chunk(
         self, upload_url: str, cur_offset: int, chunk: bytes, is_last_chunk: bool
     ):
@@ -257,7 +257,7 @@ class GPhotosMediaItemClient:
 
         return res
 
-    @backoff.on_exception(backoff.expo, (RequestException))
+    @backoff.on_exception(backoff.expo, (RequestException), max_time=60)
     def _query_chunked_upload(self, upload_url):
         self._session.headers["Content-Length"] = "0"
         self._session.headers["X-Goog-Upload-Command"] = "query"

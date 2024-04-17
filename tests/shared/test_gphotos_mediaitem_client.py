@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 import requests_mock
+from freezegun import freeze_time
 
 
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
@@ -208,6 +209,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
             }
             self.assertEqual(response, expected_response)
 
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=59.99)
     def test_add_uploaded_photos_to_gphotos__first_call_returns_5xx_second_call_returns_2xx__retries_and_returns_response(
         self,
     ):
@@ -247,6 +249,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
                 self.assertEqual(response, "u1")
 
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=59.99)
     def test_upload_photo__first_call_returns_5xx_second_call_returns_2xx__retries_and_returns_response(
         self,
     ):
@@ -281,6 +284,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
             self.assertEqual(response, MOCK_GET_MEDIA_ITEMS_RESPONSE["mediaItems"])
 
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=59.99)
     def test_search_for_media_items__first_call_returns_5xx_second_call_returns_2xx__retries_and_returns_response(
         self,
     ):
@@ -352,6 +356,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
             )
             self.assertEqual(req_13.headers["X-Goog-Upload-Offset"], "2580237")
 
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=10000)
     def test_upload_photo_in_chunks__uploading_middle_chunk_failed__makes_api_calls_correctly_and_returns_upload_token(
         self,
     ):
@@ -372,7 +377,7 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
 
             first_time_called = False
 
-            def text_callback(request, context):
+            def post_upload_url_callback(request, context):
                 nonlocal first_time_called
 
                 if request.headers["X-Goog-Upload-Command"] == "query":
@@ -387,7 +392,9 @@ class GPhotosMediaItemClientTests(unittest.TestCase):
                         context.status_code = 200
                         context.text = upload_token
 
-            request_mocker.register_uri("POST", upload_url, text=text_callback)
+            request_mocker.register_uri(
+                "POST", upload_url, text=post_upload_url_callback
+            )
 
             client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
             client.authenticate()

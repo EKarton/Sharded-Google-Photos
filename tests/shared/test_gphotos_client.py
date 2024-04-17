@@ -2,6 +2,7 @@ import tempfile
 import unittest
 import json
 import requests_mock
+from freezegun import freeze_time
 
 from unittest.mock import patch
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
@@ -90,3 +91,48 @@ class GPhotosClientTests(unittest.TestCase):
             storage_quota = client.get_storage_quota()
 
             self.assertEqual(storage_quota, mock_response["storageQuota"])
+
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=59.99)
+    def test_get_storage_quota__first_call_5xx_second_call_2xx__success_and_returns_storage_quota(
+        self,
+    ):
+        mock_response = {
+            "storageQuota": {
+                "limit": "1234",
+                "usage": "123",
+                "usageInDrive": "0",
+                "usageInDriveTrash": "0",
+            }
+        }
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            request_mocker.register_uri(
+                "GET",
+                "https://www.googleapis.com/drive/v3/about",
+                [
+                    {"text": "", "status_code": 500},
+                    {"json": mock_response, "status_code": 200},
+                ],
+            )
+
+            client.authenticate()
+            storage_quota = client.get_storage_quota()
+
+            self.assertEqual(storage_quota, mock_response["storageQuota"])
+
+    @freeze_time("Jan 14th, 2020", auto_tick_seconds=100000)
+    def test_get_storage_quota__only_5xx__throws_exception(
+        self,
+    ):
+        with MockedSavedCredentialsFile() as creds_file_path, requests_mock.Mocker() as request_mocker:
+            client = GPhotosClient("bob@gmail.com", creds_file_path, "123.json")
+            request_mocker.get(
+                "https://www.googleapis.com/drive/v3/about",
+                status_code=500,
+            )
+
+            client.authenticate()
+
+            expectedException = "500 Server Error: None for url: https://www.googleapis.com/drive/v3/about"
+            with self.assertRaisesRegex(Exception, expectedException):
+                client.get_storage_quota()

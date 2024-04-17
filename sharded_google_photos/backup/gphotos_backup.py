@@ -43,6 +43,10 @@ class GPhotosBackup:
             shared_album_repository, chunked_new_diffs
         )
         logger.debug("Step 4: Assigned albums to diffs")
+        for album_title in chunked_new_diffs:
+            client_idx = assigned_albums[album_title]["client_idx"]
+            client = self.gphoto_clients[client_idx]
+            logger.debug(f"{album_title} -> {client_idx}")
 
         # Handle each folder one by one
         for album_title in chunked_new_diffs:
@@ -85,18 +89,20 @@ class GPhotosBackup:
             self.add_uploaded_photos_safely(media_item_repository, upload_tokens)
             logger.debug(f"Step 8: Added uploaded photos to {album_title}")
 
+            logger.debug("Step 9: Added hash to each image")
+
             # Rename the album if it's currently empty
             if media_item_repository.get_num_media_items() == 0:
                 new_album_name = f"To delete/{album['title']}"
                 new_album = shared_album_repository.rename_album(
                     album["id"], new_album_name
                 )
-                logger.debug(f"Step 9: Renamed empty album {album_title} to be deleted")
+                logger.debug(f"Step 10: Marked empty album {album_title} to be deleted")
 
                 self.gphoto_clients[new_album["client_idx"]].albums().unshare_album(
                     new_album["id"]
                 )
-                logger.debug(f"Step 10: Unshared empty album {album_title}")
+                logger.debug(f"Step 11: Unshared empty album {album_title}")
 
         # Get a list of all the new albums made and its urls
         new_shared_album_urls = [
