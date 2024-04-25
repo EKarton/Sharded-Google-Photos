@@ -5,7 +5,7 @@ class GPhotosUploader:
     def __init__(self, gphoto_client: GPhotosClient):
         self.gphoto_client = gphoto_client
 
-    def upload_photos(self, file_paths, file_names):
+    def upload_photos(self, file_paths: list[str], file_names: list[str]):
         upload_tokens = []
 
         for file_path, file_name in zip(file_paths, file_names):
