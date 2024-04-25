@@ -4,9 +4,11 @@
 
 Running out of space in your Google Photos account? Wish you can upload an unlimited number of photos on Google Photos? Now you can! With this Python library, you can upload your photos to multiple Google Photo Accounts and then share those albums to your main Google Photos account. That way, you get to see all of your photos on one main Google Photos account.
 
+## Getting Started
+
 It works like this:
 
-1. Let's say you have three Google Accounts. Create an OAuth2 to interact with Google Photos and Google Drive.
+1. Let's say you have three Google Accounts. Follow [docs/create_client_id.md] to create your own OAuth2 Google Client ID to interact with Google Photos and Google Drive.
 
 2. Install `libmagic`
 
