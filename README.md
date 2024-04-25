@@ -8,7 +8,7 @@ Running out of space in your Google Photos account? Wish you can upload an unlim
 
 It works like this:
 
-1. Let's say you have three Google Accounts. Follow [docs/create_client_id.md] to create your own OAuth2 Google Client ID to interact with Google Photos and Google Drive.
+1. Let's say you have three Google Accounts. Follow [this doc](docs/create_client_id.md) to create your own OAuth2 Google Client ID to interact with Google Photos and Google Drive.
 
 2. Install `libmagic`
 
