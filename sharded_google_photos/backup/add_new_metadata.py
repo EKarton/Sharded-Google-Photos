@@ -56,7 +56,12 @@ def __get_album_title(diff: Diff) -> str:
         return diff["album_title"]
 
     album_title = os.path.dirname(diff["path"])
-    if album_title[:2] == "./":
-        album_title = album_title[2:]
+    pos = -1
+    for i, x in enumerate(album_title):
+        if x.isalpha():
+            pos = i
+            break
+
+    album_title = album_title[pos:]
 
     return album_title
