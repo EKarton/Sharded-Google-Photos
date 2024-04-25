@@ -1,5 +1,11 @@
-def diffs_splitter(diffs):
-    """Splits the diffs based on its album and the modifications to them"""
+from .models import DiffWithMetadata, GroupedDiffs
+
+
+def group_diffs_with_metadata(diffs: list[DiffWithMetadata]) -> GroupedDiffs:
+    """Splits the diffs based on its album and the modifications to them.
+
+    Refer to its test cases for its sample usages.
+    """
     result = {}
 
     for diff in diffs:

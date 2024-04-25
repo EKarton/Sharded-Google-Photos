@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from sharded_google_photos.shared.reporters.chunked_upload_reporter import (
     ChunkedUploadReporter,
 )
