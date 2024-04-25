@@ -21,15 +21,17 @@ It works like this:
     from sharded_google_photos.shared.gphotos_client import GPhotosClient
 
     clients = [
-        GPhotosClient(creds_file = "credentials-1.json", client_secret="client_secret.json"),
-        GPhotosClient(creds_file = "credentials-2.json", client_secret="client_secret.json"),
-        GPhotosClient(creds_file = "credentials-3.json", client_secret="client_secret.json"),
+        GPhotosClient(name="bob@gmail.com", creds_file = "credentials-1.json", client_secret="client_secret.json"),
+        GPhotosClient(name="alice@gmail.com", creds_file = "credentials-2.json", client_secret="client_secret.json"),
+        GPhotosClient(name="jerry@gmail.com", creds_file = "credentials-3.json", client_secret="client_secret.json"),
     ]
     for client in clients:
         client.authenticate()
 
     backup_client = GPhotosBackup(clients)
     ```
+
+    Run this script and follow the instructions from the cli.
 
 5. To upload four photos from two folders, run the following:
 
