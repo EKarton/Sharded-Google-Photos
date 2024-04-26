@@ -2,8 +2,6 @@ import json
 import tempfile
 import unittest
 import requests_mock
-import contextlib
-from io import StringIO
 from freezegun import freeze_time
 
 
