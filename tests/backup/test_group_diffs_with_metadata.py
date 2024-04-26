@@ -1,4 +1,6 @@
-from sharded_google_photos.backup.diffs_splitter import diffs_splitter
+from sharded_google_photos.backup.group_diffs_with_metadata import (
+    group_diffs_with_metadata,
+)
 
 
 def test_diff_splitter__splits_diff_from_album_title():
@@ -35,7 +37,7 @@ def test_diff_splitter__splits_diff_from_album_title():
         },
     ]
 
-    split_diff = diffs_splitter(diffs)
+    split_diff = group_diffs_with_metadata(diffs)
 
     expected_diff = {
         "A": {
