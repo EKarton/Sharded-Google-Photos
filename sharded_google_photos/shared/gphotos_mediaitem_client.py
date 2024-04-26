@@ -8,8 +8,6 @@ from requests.exceptions import HTTPError, RequestException
 from google.auth.transport.requests import AuthorizedSession
 from google.auth.transport import DEFAULT_RETRYABLE_STATUS_CODES
 
-from .reporters.chunked_upload_reporter import ChunkedUploadReporter
-
 logger = logging.getLogger(__name__)
 
 DEFAULT_RETRYABLE_ERROR_CODES_FOR_UPLOADED_PHOTOS = set(
@@ -171,7 +169,6 @@ class GPhotosMediaItemClient:
         self,
         photo_file_path: str,
         file_name: str,
-        reporter: ChunkedUploadReporter | None = None,
     ):
         upload_token = None
         mime_type = self._get_mime_type(photo_file_path)
@@ -188,9 +185,6 @@ class GPhotosMediaItemClient:
         chunk_size = int(res_1.headers["X-Goog-Upload-Chunk-Granularity"])
 
         logger.debug(f"Obtained upload url and chunk size: {upload_url} {chunk_size}")
-
-        if reporter is not None:
-            reporter.create_progress_bar()
 
         num_bytes_uploaded = 0
         with open(photo_file_path, "rb") as file_obj:
@@ -221,8 +215,6 @@ class GPhotosMediaItemClient:
                     size_received = int(req_3.headers["X-Goog-Upload-Size-Received"])
 
                     if upload_status != "active":
-                        if reporter is not None:
-                            reporter.close_progress_bar()
                         raise IllegalStateException("Upload is no longer active")
 
                     logger.debug(f"Adjusted seek to {size_received}")
@@ -233,19 +225,12 @@ class GPhotosMediaItemClient:
                     cur_offset += chunk_read
                     num_bytes_uploaded += chunk_read
 
-                    if reporter is not None:
-                        percentage = num_bytes_uploaded / file_size_in_bytes
-                        reporter.update_progress_bar(percentage)
-
                 if is_last_chunk:
                     upload_token = res_2.content.decode()
 
                 chunk = next_chunk
 
         logger.debug(f"Chunk uploading finished: {photo_file_path}")
-
-        if reporter is not None:
-            reporter.close_progress_bar()
 
         return upload_token
 
