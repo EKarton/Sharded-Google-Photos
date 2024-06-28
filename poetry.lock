@@ -285,6 +285,16 @@ files = [
 toml = ["tomli"]
 
 [[package]]
+name = "event-bus"
+version = "1.0.2"
+description = "A simple python event bus."
+optional = false
+python-versions = "*"
+files = [
+    {file = "event-bus-1.0.2.tar.gz", hash = "sha256:0a04385cca50e7cf4e1bccde288bf95bbe64cd81144b4d32c86448d946180c5c"},
+]
+
+[[package]]
 name = "flake8"
 version = "7.0.0"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -921,4 +931,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0c5367bbfff0f261c53c04df932df17b337ea55dbc354a7786b5e912c7151a63"
+content-hash = "2cd42f609938c7e661e5a7850995ab2e329dfa0fb68218e7c57185aa7f896914"
