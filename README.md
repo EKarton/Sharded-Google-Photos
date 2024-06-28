@@ -104,25 +104,19 @@ It works like this:
     poetry install
     ```
 
-3. Run the app in CLI mode by running:
-
-    ```bash
-    poetry run python sharded_google_photos/main.py
-    ```
-
-4. To lint your code, run:
+3. To lint your code, run:
 
     ```bash
     poetry run flake8 && poetry run black .
     ```
 
-5. To run tests and code coverage, run:
+4. To run tests and code coverage, run:
 
     ```bash
     poetry run coverage run -m pytest && poetry run coverage report -m
     ```
 
-6. To publish your app:
+5. To publish your app:
 
     1. First, set your PyPI api token to Poetry
 
