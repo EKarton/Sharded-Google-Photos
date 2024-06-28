@@ -28,9 +28,9 @@ class GPhotosCleaner:
         if trash_album is None:
             logger.debug("No trash album found. Creating new trash album")
             trash_album = self.gphoto_client.albums().create_album("Trash")
-            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album["id"])
-        else:
             self.event_bus.emit(events.CREATED_TRASH_ALBUM, trash_album["id"])
+        else:
+            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album["id"])
 
         logger.debug(f"Trash album: {trash_album}")
 
