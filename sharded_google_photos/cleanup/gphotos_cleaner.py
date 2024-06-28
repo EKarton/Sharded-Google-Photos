@@ -50,8 +50,20 @@ class GPhotosCleaner:
                 media_item_ids_to_trash.append(media_item_id)
 
         if len(media_item_ids_to_trash) > 0:
-            self._gphoto_client.albums().add_photos_to_album(
+            self.__add_photos_to_album_safely(
                 trash_album["id"], media_item_ids_to_trash
             )
 
         logger.debug(f"Media item ids moved to trash: {media_item_ids_to_trash}")
+
+    def __add_photos_to_album_safely(self, album_id, media_item_ids):
+        MAX_MEDIA_ITEMS_LENGTH_PER_CALL = 50
+
+        for i in range(0, len(media_item_ids), MAX_MEDIA_ITEMS_LENGTH_PER_CALL):
+            chunked_media_item_ids = media_item_ids[
+                i : i + MAX_MEDIA_ITEMS_LENGTH_PER_CALL
+            ]
+
+            self._gphoto_client.albums().add_photos_to_album(
+                album_id, chunked_media_item_ids
+            )
