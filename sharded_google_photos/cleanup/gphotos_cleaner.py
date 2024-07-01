@@ -13,7 +13,7 @@ class GPhotosCleaner:
         self.gphoto_client = gphoto_client
         self.event_bus = event_bus if event_bus is not None else EventBus()
 
-    def mark_unalbumed_photos_to_trash(self):
+    def mark_unalbumed_photos_to_trash(self) -> None:
         """Finds all of the photos that are not in an album, and puts it in a
         dedicated "Trash" album to be deleted by the user manually.
         """
@@ -69,7 +69,7 @@ class GPhotosCleaner:
             events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH, media_item_ids_in_albums
         )
 
-    def __add_photos_to_album_safely(self, album_id, media_item_ids):
+    def __add_photos_to_album_safely(self, album_id: str, media_item_ids: list[str]):
         MAX_MEDIA_ITEMS_LENGTH_PER_CALL = 50
 
         for i in range(0, len(media_item_ids), MAX_MEDIA_ITEMS_LENGTH_PER_CALL):

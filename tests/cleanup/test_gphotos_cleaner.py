@@ -1,10 +1,10 @@
 import unittest
-from event_bus import EventBus
 
 from sharded_google_photos.cleanup import events
 from sharded_google_photos.cleanup.gphotos_cleaner import GPhotosCleaner
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
+from sharded_google_photos.shared.testing.fake_eventbus import FakeEventBus
 
 num_found_trash_album_events_called = 0
 num_created_trash_album_events_called = 0
@@ -141,35 +141,18 @@ class GPhotosClientTests(unittest.TestCase):
         client.authenticate()
         u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
         client.media_items().add_uploaded_photos_to_gphotos([u1])
-        event_bus = EventBus()
-
-        @event_bus.on(events.FOUND_TRASH_ALBUM)
-        def handle_found_trash_album_events(_):
-            global num_found_trash_album_events_called
-            num_found_trash_album_events_called += 1
-
-        @event_bus.on(events.CREATED_TRASH_ALBUM)
-        def handle_created_trash_album_events(_):
-            global num_created_trash_album_events_called
-            num_created_trash_album_events_called += 1
-
-        @event_bus.on(events.FOUND_ALBUMLESS_MEDIA_ITEMS)
-        def handle_found_albumless_media_items(_):
-            global num_found_albumless_media_items_events_called
-            num_found_albumless_media_items_events_called += 1
-
-        @event_bus.on(events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH)
-        def handle_added_albumless_media_items_to_trash(_):
-            global num_added_albumless_media_items_to_trash_events_called
-            num_added_albumless_media_items_to_trash_events_called += 1
+        event_bus = FakeEventBus()
 
         cleaner = GPhotosCleaner(client, event_bus)
         cleaner.mark_unalbumed_photos_to_trash()
 
-        self.assertEqual(num_found_trash_album_events_called, 0)
-        self.assertEqual(num_created_trash_album_events_called, 1)
-        self.assertEqual(num_found_albumless_media_items_events_called, 1)
-        self.assertEqual(num_added_albumless_media_items_to_trash_events_called, 1)
+        emitted_events = event_bus.get_events_emitted()
+        self.assertEqual(len(emitted_events), 3)
+        self.assertEqual(emitted_events[0].name, events.CREATED_TRASH_ALBUM)
+        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(
+            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+        )
 
     def test_mark_unalbumed_photos_to_trash__existing_trash_album__events_emitted(self):
         repository = FakeItemsRepository()
@@ -178,35 +161,18 @@ class GPhotosClientTests(unittest.TestCase):
         u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
         client.media_items().add_uploaded_photos_to_gphotos([u1])
         client.albums().create_album("Trash")
-        event_bus = EventBus()
-
-        @event_bus.on(events.FOUND_TRASH_ALBUM)
-        def handle_found_trash_album_events(_):
-            global num_found_trash_album_events_called
-            num_found_trash_album_events_called += 1
-
-        @event_bus.on(events.CREATED_TRASH_ALBUM)
-        def handle_created_trash_album_events(_):
-            global num_created_trash_album_events_called
-            num_created_trash_album_events_called += 1
-
-        @event_bus.on(events.FOUND_ALBUMLESS_MEDIA_ITEMS)
-        def handle_found_albumless_media_items(_):
-            global num_found_albumless_media_items_events_called
-            num_found_albumless_media_items_events_called += 1
-
-        @event_bus.on(events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH)
-        def handle_added_albumless_media_items_to_trash(_):
-            global num_added_albumless_media_items_to_trash_events_called
-            num_added_albumless_media_items_to_trash_events_called += 1
+        event_bus = FakeEventBus()
 
         cleaner = GPhotosCleaner(client, event_bus)
         cleaner.mark_unalbumed_photos_to_trash()
 
-        self.assertEqual(num_found_trash_album_events_called, 1)
-        self.assertEqual(num_created_trash_album_events_called, 0)
-        self.assertEqual(num_found_albumless_media_items_events_called, 1)
-        self.assertEqual(num_added_albumless_media_items_to_trash_events_called, 1)
+        emitted_events = event_bus.get_events_emitted()
+        self.assertEqual(len(emitted_events), 3)
+        self.assertEqual(emitted_events[0].name, events.FOUND_TRASH_ALBUM)
+        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(
+            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+        )
 
     def __get_media_item_ids_in_trash__(self, client):
         albums = client.albums().list_albums()
