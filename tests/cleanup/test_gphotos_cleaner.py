@@ -1,15 +1,29 @@
 import unittest
 
+from sharded_google_photos.cleanup import events
 from sharded_google_photos.cleanup.gphotos_cleaner import GPhotosCleaner
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
+from sharded_google_photos.shared.testing.fake_eventbus import FakeEventBus
+
+num_found_trash_album_events_called = 0
+num_created_trash_album_events_called = 0
+num_found_albumless_media_items_events_called = 0
+num_added_albumless_media_items_to_trash_events_called = 0
 
 
 class GPhotosClientTests(unittest.TestCase):
     def setup_method(self, test_method):
+        global num_found_trash_album_events_called, num_created_trash_album_events_called, num_found_albumless_media_items_events_called, num_added_albumless_media_items_to_trash_events_called
+
         self.repository = FakeItemsRepository()
         self.client_1 = FakeGPhotosClient(repository=self.repository)
         self.client_1.authenticate()
+
+        num_found_trash_album_events_called = 0
+        num_created_trash_album_events_called = 0
+        num_found_albumless_media_items_events_called = 0
+        num_added_albumless_media_items_to_trash_events_called = 0
 
     def test_mark_unalbumed_photos_to_trash__photos_in_shared_album__puts_non_shared_photos_to_trash(
         self,
@@ -118,6 +132,47 @@ class GPhotosClientTests(unittest.TestCase):
             {"newMediaItemResults": uploads}
         )
         self.assertEqual(media_item_ids_in_trash, expected_media_item_ids)
+
+    def test_mark_unalbumed_photos_to_trash__no_existing_trash_album__events_emitted(
+        self,
+    ):
+        repository = FakeItemsRepository()
+        client = FakeGPhotosClient(repository=repository)
+        client.authenticate()
+        u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
+        client.media_items().add_uploaded_photos_to_gphotos([u1])
+        event_bus = FakeEventBus()
+
+        cleaner = GPhotosCleaner(client, event_bus)
+        cleaner.mark_unalbumed_photos_to_trash()
+
+        emitted_events = event_bus.get_events_emitted()
+        self.assertEqual(len(emitted_events), 3)
+        self.assertEqual(emitted_events[0].name, events.CREATED_TRASH_ALBUM)
+        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(
+            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+        )
+
+    def test_mark_unalbumed_photos_to_trash__existing_trash_album__events_emitted(self):
+        repository = FakeItemsRepository()
+        client = FakeGPhotosClient(repository=repository)
+        client.authenticate()
+        u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
+        client.media_items().add_uploaded_photos_to_gphotos([u1])
+        client.albums().create_album("Trash")
+        event_bus = FakeEventBus()
+
+        cleaner = GPhotosCleaner(client, event_bus)
+        cleaner.mark_unalbumed_photos_to_trash()
+
+        emitted_events = event_bus.get_events_emitted()
+        self.assertEqual(len(emitted_events), 3)
+        self.assertEqual(emitted_events[0].name, events.FOUND_TRASH_ALBUM)
+        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(
+            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+        )
 
     def __get_media_item_ids_in_trash__(self, client):
         albums = client.albums().list_albums()

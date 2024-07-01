@@ -13,6 +13,7 @@ google-auth-oauthlib = "^1.2.0"
 backoff = "^2.2.1"
 python-magic = "^0.4.27"
 tqdm = "^4.66.2"
+event-bus = "^1.0.2"
 
 
 [tool.poetry.group.dev.dependencies]
