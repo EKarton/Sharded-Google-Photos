@@ -102,7 +102,10 @@ class GPhotosMediaItemClient:
     def search_for_media_items(
         self, album_id: str = None, filters: str = None, order_by: str = None
     ):
-        logger.debug(f"Listing media items with filter {album_id} {filters} {order_by}")
+        logger.debug(
+            f"Listing media items with filter album_id={album_id} "
+            + f"filters={filters} order_by={order_by}"
+        )
 
         page_token = None
         media_items = []

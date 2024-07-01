@@ -30,9 +30,9 @@ class GPhotosCleaner:
             trash_album = self.gphoto_client.albums().create_album("Trash")
             self.event_bus.emit(events.CREATED_TRASH_ALBUM, trash_album["id"])
         else:
-            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album["id"])
+            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album)
 
-        logger.debug(f"Trash album: {trash_album}")
+        logger.debug(f"Trash album: {trash_album['id']}")
 
         # Find all of the media item ids in all shared albums
         logger.debug("Step 2: Find all media item ids in shared albums")
@@ -46,7 +46,7 @@ class GPhotosCleaner:
 
         logger.debug(f"Media item ids in albums: {media_item_ids_in_albums}")
         self.event_bus.emit(
-            events.FOUND_ALBUMLESS_MEDIA_ITEMS, media_item_ids_in_albums
+            events.FOUND_MEDIA_ITEMS_IN_ALBUMS, media_item_ids_in_albums
         )
 
         # Go through all of the media items, and if they are not in albums, move it to trash
@@ -64,10 +64,8 @@ class GPhotosCleaner:
                 trash_album["id"], media_item_ids_to_trash
             )
 
-        logger.debug(f"Media item ids moved to trash: {media_item_ids_to_trash}")
-        self.event_bus.emit(
-            events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH, media_item_ids_in_albums
-        )
+        logger.debug(f"Media item ids moved to trash: {len(media_item_ids_to_trash)}")
+        self.event_bus.emit(events.ADDED_MEDIA_ITEMS_TO_TRASH, media_item_ids_to_trash)
 
     def __add_photos_to_album_safely(self, album_id: str, media_item_ids: list[str]):
         MAX_MEDIA_ITEMS_LENGTH_PER_CALL = 50

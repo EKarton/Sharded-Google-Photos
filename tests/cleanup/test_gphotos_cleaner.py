@@ -140,18 +140,22 @@ class GPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repository=repository)
         client.authenticate()
         u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
-        client.media_items().add_uploaded_photos_to_gphotos([u1])
+        m1 = client.media_items().add_uploaded_photos_to_gphotos([u1])
         event_bus = FakeEventBus()
 
         cleaner = GPhotosCleaner(client, event_bus)
         cleaner.mark_unalbumed_photos_to_trash()
 
+        print(m1)
+
         emitted_events = event_bus.get_events_emitted()
         self.assertEqual(len(emitted_events), 3)
         self.assertEqual(emitted_events[0].name, events.CREATED_TRASH_ALBUM)
-        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(emitted_events[1].name, events.FOUND_MEDIA_ITEMS_IN_ALBUMS)
+        self.assertEqual(emitted_events[1].args[0], set())
+        self.assertEqual(emitted_events[2].name, events.ADDED_MEDIA_ITEMS_TO_TRASH)
         self.assertEqual(
-            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+            emitted_events[2].args[0], [m1["newMediaItemResults"][0]["mediaItem"]["id"]]
         )
 
     def test_mark_unalbumed_photos_to_trash__existing_trash_album__events_emitted(self):
@@ -159,7 +163,7 @@ class GPhotosClientTests(unittest.TestCase):
         client = FakeGPhotosClient(repository=repository)
         client.authenticate()
         u1 = client.media_items().upload_photo("A/1.jpg", "1.jpg")
-        client.media_items().add_uploaded_photos_to_gphotos([u1])
+        m1 = client.media_items().add_uploaded_photos_to_gphotos([u1])
         client.albums().create_album("Trash")
         event_bus = FakeEventBus()
 
@@ -169,9 +173,11 @@ class GPhotosClientTests(unittest.TestCase):
         emitted_events = event_bus.get_events_emitted()
         self.assertEqual(len(emitted_events), 3)
         self.assertEqual(emitted_events[0].name, events.FOUND_TRASH_ALBUM)
-        self.assertEqual(emitted_events[1].name, events.FOUND_ALBUMLESS_MEDIA_ITEMS)
+        self.assertEqual(emitted_events[1].name, events.FOUND_MEDIA_ITEMS_IN_ALBUMS)
+        self.assertEqual(emitted_events[1].args[0], set())
+        self.assertEqual(emitted_events[2].name, events.ADDED_MEDIA_ITEMS_TO_TRASH)
         self.assertEqual(
-            emitted_events[2].name, events.ADDED_ALBUMLESS_MEDIA_ITEMS_TO_TRASH
+            emitted_events[2].args[0], [m1["newMediaItemResults"][0]["mediaItem"]["id"]]
         )
 
     def __get_media_item_ids_in_trash__(self, client):
