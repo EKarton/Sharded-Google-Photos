@@ -32,7 +32,7 @@ class GPhotosCleaner:
         else:
             self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album["id"])
 
-        logger.debug(f"Trash album: {trash_album}")
+        logger.debug(f"Trash album: {trash_album['id']}")
 
         # Find all of the media item ids in all shared albums
         logger.debug("Step 2: Find all media item ids in shared albums")
