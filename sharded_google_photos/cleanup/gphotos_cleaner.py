@@ -30,7 +30,7 @@ class GPhotosCleaner:
             trash_album = self.gphoto_client.albums().create_album("Trash")
             self.event_bus.emit(events.CREATED_TRASH_ALBUM, trash_album["id"])
         else:
-            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album["id"])
+            self.event_bus.emit(events.FOUND_TRASH_ALBUM, trash_album)
 
         logger.debug(f"Trash album: {trash_album['id']}")
 
