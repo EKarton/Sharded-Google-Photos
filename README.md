@@ -31,17 +31,21 @@ It works like this:
     backup_client = GPhotosBackup(clients)
     ```
 
-    Run this script and follow the instructions from the cli.
+    Run this script.
+
+    The first time this is run, it will ask for you to log in via OAuth. Copy-paste the links to your browser and follow the instructions from there. It will save the credentials (i.e, `access_token` and `refresh_token`) in the respected `creds_file` (i.e, `credentials-1.json`, `credentials-2.json`, and `credentials-3.json`).
+
+    The next time the script is run, it will take the credentials from the `creds_file`. If it needs to be reauthenticated, it will ask you to log in via OAuth.
 
 5. To upload four photos from two folders, run the following:
 
     ```python
     new_album_uris = backup_client.backup(
         [
-            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
-            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/2.jpg" },
-            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/3.jpg" },
-            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to Toronto/4.jpg" },
+            { "modifier": "+", "path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+            { "modifier": "+", "path": "./Archives/Photos/2022/Trip to California/2.jpg" },
+            { "modifier": "+", "path": "./Archives/Photos/2022/Trip to Toronto/3.jpg" },
+            { "modifier": "+", "path": "./Archives/Photos/2022/Trip to Toronto/4.jpg" },
         ]
     )
     print(new_album_uris)
@@ -64,8 +68,8 @@ It works like this:
     ```python
     backup_client.backup(
         [
-            { "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
-            { "modifier": "+", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+            { "modifier": "-", "path": "./Archives/Photos/2022/Trip to California/1.jpg" },
+            { "modifier": "+", "path": "./Archives/Photos/2022/Trip to California/1.jpg" },
         ]
     )
     ```
@@ -76,7 +80,7 @@ It works like this:
     backup_client.backup(
         [
             {
-                "modifier": "-", "file_path": "./Archives/Photos/2022/Trip to California/1.jpg",
+                "modifier": "-", "path": "./Archives/Photos/2022/Trip to California/1.jpg",
             }
         ]
     )

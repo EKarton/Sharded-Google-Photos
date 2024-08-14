@@ -153,7 +153,7 @@ This document outlines how to create your own OAuth2 client ID and client secret
     </p>
 </div>
 
-12. Create the Client IDs and client secrets by going to the "Credentials" tab, clicking on "Create Credentials", select "OAuth Client ID", and selecting "Web Application":
+12. Create the Client IDs and client secrets by going to the "Credentials" tab, clicking on "Create Credentials", select "OAuth Client ID", selecting "Web Application", and adding `http://localhost:8080/` in the authorized redirect uri:
 
 <div width="100%">
     <p align="center">
@@ -179,8 +179,6 @@ This document outlines how to create your own OAuth2 client ID and client secret
     </p>
 </div>
 
-13. Finally, click on the `Create` button. A dialog will appear with your Client ID and Client secrets. Download the file and you now have your own client ID and client secrets:
-
 <div width="100%">
     <p align="center">
 <img src="image-26.png" width="600px"/>
@@ -190,5 +188,19 @@ This document outlines how to create your own OAuth2 client ID and client secret
 <div width="100%">
     <p align="center">
 <img src="image-27.png" width="600px"/>
+    </p>
+</div>
+
+13. Finally, click on the `Create` button. A dialog will appear with your Client ID and Client secrets. Download the file named as `client_secrets.json` and you now have your own client ID and client secrets:
+
+<div width="100%">
+    <p align="center">
+<img src="image-28.png" width="600px"/>
+    </p>
+</div>
+
+<div width="100%">
+    <p align="center">
+<img src="image-29.png" width="600px"/>
     </p>
 </div>
