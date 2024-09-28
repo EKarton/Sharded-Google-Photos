@@ -12,12 +12,12 @@ class GPhotosUploader:
         """
         Uploads a list of photos
 
-        Parameters:
-        file_paths (list[str]): A list of the photos' file paths to upload
-        file_names (list[str]): A list of the corresponding photos' file names
+        Args:
+            file_paths (list[str]): A list of the photos' file paths to upload
+            file_names (list[str]): A list of the corresponding photos' file names
 
         Returns:
-        list[str]: A list of upload tokens to add to a Google Photos album
+            list[str]: A list of upload tokens to add to a Google Photos album
         """
         upload_tokens = []
         self.event_bus.emit(gphotos_uploader_events.STARTED_UPLOADING, file_paths)

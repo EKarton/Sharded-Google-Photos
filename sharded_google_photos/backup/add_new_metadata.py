@@ -26,11 +26,11 @@ def add_new_metadata(diffs: list[Diff]) -> list[DiffWithMetadata]:
     """
     Fetches and returns a new list of metadata from a list of metadata
 
-    Parameters:
-    diffs (list[Diff]): the original diffs.
+    Args:
+        diffs (list[Diff]): the original diffs.
 
     Returns:
-    list[DiffWithMetadata]: the original diffs, but with new metadata fields.
+        list[DiffWithMetadata]: the original diffs, but with new metadata fields.
     """
     new_diffs: list[DiffWithMetadata] = []
     for diff in diffs:

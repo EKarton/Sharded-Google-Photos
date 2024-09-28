@@ -6,13 +6,32 @@ logger = logging.getLogger(__name__)
 
 
 class SharedAlbumRepository:
+    """
+    A class to representing a list of shared albums from a list of
+    Google Photo accounts.
+
+    Example:
+        >>> repo = SharedAlbumRepository([GPhotosClient(...), GPhotosClient(...), ...])
+        >>> rect.setup()
+        >>> rect.contains_album_title('Archives/Photos/2024')
+        true
+    """
+
     def __init__(self, gphoto_clients: list[GPhotosClient]):
         self.__gphoto_clients = gphoto_clients
 
         self.__album_id_to_album = {}
         self.__album_title_to_album_id = {}
 
-    def setup(self):
+    def setup(self) -> None:
+        """
+        Sets up the albums repository.
+
+        It will query for all albums from all google photo clients.
+
+        This function should be called before calling other instance
+        methods below.
+        """
         self.__album_id_to_album = {}
         self.__album_title_to_album_id = {}
 
@@ -31,17 +50,52 @@ class SharedAlbumRepository:
                 self.__album_id_to_album[album_id] = album
                 self.__album_title_to_album_id[album_title] = album_id
 
-    def contains_album_title(self, title):
+    def contains_album_title(self, title: str) -> bool:
+        """
+        Returns true if an album exists based on its title
+
+        Parameters:
+            title (str): the album name
+
+        Returns:
+            bool: true if it exists; else false
+        """
         return title in self.__album_title_to_album_id
 
-    def get_album_from_title(self, title):
+    def get_album_from_title(self, title: str) -> object:
+        """
+        Returns an album from a title.
+
+        Parameters:
+            title (str): the album title.
+
+        Returns:
+            object: an Album object.
+
+        Raises:
+            Exception: thrown when no album exists with that title.
+        """
         if title not in self.__album_title_to_album_id:
             raise Exception(f"Album {title} does not exist")
 
         album_id = self.__album_title_to_album_id[title]
         return self.__album_id_to_album[album_id]
 
-    def create_shared_album(self, client_idx, title):
+    def create_shared_album(self, client_idx: int, title: str) -> object:
+        """
+        Creates a new shared album under a particular Google Photos account.
+
+        Parameters:
+            client_idx (int): an index to the list of Google Photo accounts
+              in self.gphoto_clients.
+            title (str): the album name
+
+        Returns:
+            object: the object of the newly created album.
+
+        Raises:
+            Exception: thrown if the title already exists.
+        """
         if title in self.__album_title_to_album_id:
             raise Exception(f"Album {title} already exists")
 
@@ -58,7 +112,22 @@ class SharedAlbumRepository:
         self.__album_title_to_album_id[title] = new_album_id
         return new_album
 
-    def rename_album(self, album_id, new_title):
+    def rename_album(self, album_id: str, new_title: str) -> object:
+        """
+        Renames an album with a new name. It returns the object of that
+        album with that new name.
+
+        Parameters:
+            album_id (str): the id of the album to rename
+            new_title (str): the new name of the album
+
+        Returns:
+            object: the album object with the new name
+
+        Raises:
+            Exception: thrown if album id does not exist or the
+              title already exists.
+        """
         if album_id not in self.__album_id_to_album:
             raise Exception(f"Album {album_id} does not exist")
 

@@ -32,7 +32,29 @@ class GPhotosBackup:
     def __init__(self, gphoto_clients: list[GPhotosClient]):
         self.gphoto_clients = gphoto_clients
 
-    def backup(self, diffs: list[Diff]):
+    def backup(self, diffs: list[Diff]) -> GPhotosBackupResults:
+        """
+        Backs up a list of diffs to Google Photos across multiple accounts.
+
+        It uploads photos to the same album if the album exists.
+
+        If no album exists, it creates a new album in a Google Photos account
+        with the most amount of space available.
+
+        If no Google Photos account has availability to create a new album or
+        there is no more space to upload a photo to an existing Google Photos
+        album, it will throw a NoAvailableSpaceInExistingAlbumException
+        exception.
+
+        Args:
+            diffs (list[Diff]): A list of diffs.
+
+        Returns:
+            GPhotosBackupResults: the results of the backup.
+
+        Raises:
+            NoAvailableSpaceInExistingAlbumException: if there is no space in an existing album.
+        """
         # Insert new metadata in the diffs
         new_diffs = add_new_metadata(diffs)
         logger.debug("Step 1: Add new metadata to the diff")
