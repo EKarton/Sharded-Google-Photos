@@ -30,3 +30,6 @@ class FakeEventBus(EventBus):
 
     def get_events_emitted(self) -> list[Event]:
         return self._emitted_events
+
+    def clear_events_emitted(self):
+        self._emitted_events.clear()

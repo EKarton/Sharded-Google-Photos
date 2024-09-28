@@ -1,6 +1,8 @@
 from event_bus import EventBus
+
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
-from . import gphotos_uploader_events
+
+from . import gphotos_uploader_events as events
 
 
 class GPhotosUploader:
@@ -20,14 +22,14 @@ class GPhotosUploader:
             list[str]: A list of upload tokens to add to a Google Photos album
         """
         upload_tokens = []
-        self.event_bus.emit(gphotos_uploader_events.STARTED_UPLOADING, file_paths)
+        self.event_bus.emit(events.STARTED_UPLOADING, file_paths)
 
         for file_path, file_name in zip(file_paths, file_names):
             upload_token = self.gphoto_client.media_items().upload_photo_in_chunks(
                 file_path, file_name
             )
-            self.event_bus.emit(gphotos_uploader_events.UPLOADED_PHOTO, file_path)
+            self.event_bus.emit(events.UPLOADED_PHOTO, file_path)
             upload_tokens.append(upload_token)
 
-        self.event_bus.emit(gphotos_uploader_events.FINISHED_UPLOADING)
+        self.event_bus.emit(events.FINISHED_UPLOADING)
         return upload_tokens

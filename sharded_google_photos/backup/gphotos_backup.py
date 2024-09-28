@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from event_bus import EventBus
 
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
 
@@ -7,6 +8,8 @@ from .group_diffs_with_metadata import group_diffs_with_metadata, GroupedDiffs
 from .shared_album_repository import SharedAlbumRepository
 from .media_item_repository import MediaItemRepository
 from .gphotos_uploader import GPhotosUploader
+from . import gphotos_uploader_events
+from . import gphotos_backup_events as events
 from .add_new_metadata import add_new_metadata, Diff, DiffWithMetadata
 
 logger = logging.getLogger(__name__)
@@ -29,8 +32,9 @@ class GPhotosBackupResults:
 
 
 class GPhotosBackup:
-    def __init__(self, gphoto_clients: list[GPhotosClient]):
+    def __init__(self, gphoto_clients: list[GPhotosClient], event_bus: EventBus = None):
         self.gphoto_clients = gphoto_clients
+        self.event_bus = event_bus if event_bus is not None else EventBus()
 
     def backup(self, diffs: list[Diff]) -> GPhotosBackupResults:
         """
@@ -60,7 +64,7 @@ class GPhotosBackup:
         logger.debug("Step 1: Add new metadata to the diff")
 
         # Split the diff based on the album title
-        chunked_new_diffs = group_diffs_with_metadata(new_diffs)
+        grouped_diffs = group_diffs_with_metadata(new_diffs)
         logger.debug("Step 2: Split the diff")
 
         # Find all the albums in all accounts with an index to which account
@@ -69,16 +73,28 @@ class GPhotosBackup:
         logger.debug("Step 3: Found existing shared albums")
 
         assigned_albums = self.__get_album_assignment_for_chunked_diffs(
-            shared_album_repository, chunked_new_diffs
+            shared_album_repository, grouped_diffs
         )
         logger.debug("Step 4: Assigned albums to diffs")
-        for album_title in chunked_new_diffs:
+        for album_title in grouped_diffs:
             client_idx = assigned_albums[album_title]["client_idx"]
             client = self.gphoto_clients[client_idx]
             logger.debug(f"{album_title} -> {client_idx}")
 
+        # Emit the number of photos we need to upload
+        num_photos_to_upload = sum(
+            [len(grouped_diffs[title].get("+", [])) for title in grouped_diffs]
+        )
+        self.event_bus.emit(events.STARTED_UPLOADING, num_photos_to_upload)
+
+        # Emit the number of photos we need to delete
+        num_photos_to_delete = sum(
+            [len(grouped_diffs[title].get("-", [])) for title in grouped_diffs]
+        )
+        self.event_bus.emit(events.STARTED_DELETING, num_photos_to_delete)
+
         # Handle each folder one by one
-        for album_title in chunked_new_diffs:
+        for album_title in grouped_diffs:
             album = assigned_albums[album_title]["album"]
             client = self.gphoto_clients[assigned_albums[album_title]["client_idx"]]
 
@@ -89,7 +105,7 @@ class GPhotosBackup:
 
             # Remove the files to delete out of the album
             media_ids_to_remove = set()
-            for deletion_diff in chunked_new_diffs[album_title].get("-", []):
+            for deletion_diff in grouped_diffs[album_title].get("-", []):
                 file_name = deletion_diff["file_name"]
 
                 if media_item_repository.contains_file_name(file_name):
@@ -99,13 +115,24 @@ class GPhotosBackup:
                     media_ids_to_remove.add(media_item["id"])
 
             media_item_repository.remove_media_items(list(media_ids_to_remove))
+
+            # Emit the photos we deleted
+            for deletion_diff in grouped_diffs[album_title].get("-", []):
+                self.event_bus.emit(events.DELETED_PHOTO, deletion_diff["abs_path"])
+
             logger.debug(
                 f"Step 6: Removing {len(media_ids_to_remove)} photos from {album_title}"
             )
 
             # Upload the additional files
-            uploader = GPhotosUploader(client)
-            added_diffs = chunked_new_diffs[album_title].get("+", [])
+            gphotos_uploader_event_bus = EventBus()
+            uploader = GPhotosUploader(client, gphotos_uploader_event_bus)
+            added_diffs = grouped_diffs[album_title].get("+", [])
+
+            @gphotos_uploader_event_bus.on(gphotos_uploader_events.UPLOADED_PHOTO)
+            def handle_uploaded_photo(photo_file_path: str):
+                self.event_bus.emit(events.UPLOADED_PHOTO, photo_file_path)
+
             upload_tokens = uploader.upload_photos(
                 file_paths=[a["abs_path"] for a in added_diffs],
                 file_names=[a["file_name"] for a in added_diffs],
@@ -132,6 +159,9 @@ class GPhotosBackup:
                     new_album["id"]
                 )
                 logger.debug(f"Step 11: Unshared empty album {album_title}")
+
+        self.event_bus.emit(events.FINISHED_UPLOADING)
+        self.event_bus.emit(events.FINISHED_DELETING)
 
         return GPhotosBackupResults(
             new_albums=[
