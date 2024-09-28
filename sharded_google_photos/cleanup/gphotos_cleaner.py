@@ -9,12 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class GPhotosCleaner:
+    """
+    A class that is responsible for cleaning up and deleting photos that are no longer
+    in albums anymore.
+    """
+
     def __init__(self, gphoto_client: GPhotosClient, event_bus: EventBus = None):
         self.gphoto_client = gphoto_client
         self.event_bus = event_bus if event_bus is not None else EventBus()
 
     def mark_unalbumed_photos_to_trash(self) -> None:
-        """Finds all of the photos that are not in an album, and puts it in a
+        """
+        Finds all of the photos that are not in an album, and puts it in a
         dedicated "Trash" album to be deleted by the user manually.
         """
 

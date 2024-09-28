@@ -1,13 +1,16 @@
 import logging
+from dataclasses import dataclass
+from event_bus import EventBus
 
 from sharded_google_photos.shared.gphotos_client import GPhotosClient
 
-from .group_diffs_with_metadata import group_diffs_with_metadata
+from .group_diffs_with_metadata import group_diffs_with_metadata, GroupedDiffs
 from .shared_album_repository import SharedAlbumRepository
 from .media_item_repository import MediaItemRepository
 from .gphotos_uploader import GPhotosUploader
-from .add_new_metadata import add_new_metadata
-from .models import Diffs, DiffsWithMetadata
+from . import gphotos_uploader_events
+from . import gphotos_backup_events as events
+from .add_new_metadata import add_new_metadata, Diff, DiffWithMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +25,46 @@ class NoAvailableSpaceInExistingAlbumException(Exception):
         self.album_title = album_title
 
 
-class GPhotosBackup:
-    def __init__(self, gphoto_clients: list[GPhotosClient]):
-        self.gphoto_clients = gphoto_clients
+@dataclass
+class GPhotosBackupResults:
+    # A list of newly created albums
+    new_albums: list[object]
 
-    def backup(self, diffs: Diffs):
+
+class GPhotosBackup:
+    def __init__(self, gphoto_clients: list[GPhotosClient], event_bus: EventBus = None):
+        self.gphoto_clients = gphoto_clients
+        self.event_bus = event_bus if event_bus is not None else EventBus()
+
+    def backup(self, diffs: list[Diff]) -> GPhotosBackupResults:
+        """
+        Backs up a list of diffs to Google Photos across multiple accounts.
+
+        It uploads photos to the same album if the album exists.
+
+        If no album exists, it creates a new album in a Google Photos account
+        with the most amount of space available.
+
+        If no Google Photos account has availability to create a new album or
+        there is no more space to upload a photo to an existing Google Photos
+        album, it will throw a NoAvailableSpaceInExistingAlbumException
+        exception.
+
+        Args:
+            diffs (list[Diff]): A list of diffs.
+
+        Returns:
+            GPhotosBackupResults: the results of the backup.
+
+        Raises:
+            NoAvailableSpaceInExistingAlbumException: if there is no space in an existing album.
+        """
         # Insert new metadata in the diffs
         new_diffs = add_new_metadata(diffs)
         logger.debug("Step 1: Add new metadata to the diff")
 
         # Split the diff based on the album title
-        chunked_new_diffs = group_diffs_with_metadata(new_diffs)
+        grouped_diffs = group_diffs_with_metadata(new_diffs)
         logger.debug("Step 2: Split the diff")
 
         # Find all the albums in all accounts with an index to which account
@@ -41,16 +73,28 @@ class GPhotosBackup:
         logger.debug("Step 3: Found existing shared albums")
 
         assigned_albums = self.__get_album_assignment_for_chunked_diffs(
-            shared_album_repository, chunked_new_diffs
+            shared_album_repository, grouped_diffs
         )
         logger.debug("Step 4: Assigned albums to diffs")
-        for album_title in chunked_new_diffs:
+        for album_title in grouped_diffs:
             client_idx = assigned_albums[album_title]["client_idx"]
             client = self.gphoto_clients[client_idx]
             logger.debug(f"{album_title} -> {client_idx}")
 
+        # Emit the number of photos we need to upload
+        num_photos_to_upload = sum(
+            [len(grouped_diffs[title].get("+", [])) for title in grouped_diffs]
+        )
+        self.event_bus.emit(events.STARTED_UPLOADING, num_photos_to_upload)
+
+        # Emit the number of photos we need to delete
+        num_photos_to_delete = sum(
+            [len(grouped_diffs[title].get("-", [])) for title in grouped_diffs]
+        )
+        self.event_bus.emit(events.STARTED_DELETING, num_photos_to_delete)
+
         # Handle each folder one by one
-        for album_title in chunked_new_diffs:
+        for album_title in grouped_diffs:
             album = assigned_albums[album_title]["album"]
             client = self.gphoto_clients[assigned_albums[album_title]["client_idx"]]
 
@@ -60,24 +104,37 @@ class GPhotosBackup:
             logger.debug(f"Step 5: Find the existing photos in {album_title}")
 
             # Remove the files to delete out of the album
-            media_ids_to_remove = set()
-            for deletion_diff in chunked_new_diffs[album_title].get("-", []):
+            media_ids_to_remove = []
+            media_item_paths_removed = []
+            for deletion_diff in grouped_diffs[album_title].get("-", []):
                 file_name = deletion_diff["file_name"]
 
                 if media_item_repository.contains_file_name(file_name):
                     media_item = media_item_repository.get_media_item_from_file_name(
                         file_name
                     )
-                    media_ids_to_remove.add(media_item["id"])
+                    media_ids_to_remove.append(media_item["id"])
+                    media_item_paths_removed.append(deletion_diff["abs_path"])
 
-            media_item_repository.remove_media_items(list(media_ids_to_remove))
+            media_item_repository.remove_media_items(media_ids_to_remove)
+
+            # Emit the photos we deleted
+            for removed_media_item_path in media_item_paths_removed:
+                self.event_bus.emit(events.DELETED_PHOTO, removed_media_item_path)
+
             logger.debug(
                 f"Step 6: Removing {len(media_ids_to_remove)} photos from {album_title}"
             )
 
             # Upload the additional files
-            uploader = GPhotosUploader(client)
-            added_diffs = chunked_new_diffs[album_title].get("+", [])
+            gphotos_uploader_event_bus = EventBus()
+            uploader = GPhotosUploader(client, gphotos_uploader_event_bus)
+            added_diffs = grouped_diffs[album_title].get("+", [])
+
+            @gphotos_uploader_event_bus.on(gphotos_uploader_events.UPLOADED_PHOTO)
+            def handle_uploaded_photo(photo_file_path: str):
+                self.event_bus.emit(events.UPLOADED_PHOTO, photo_file_path)
+
             upload_tokens = uploader.upload_photos(
                 file_paths=[a["abs_path"] for a in added_diffs],
                 file_names=[a["file_name"] for a in added_diffs],
@@ -105,16 +162,19 @@ class GPhotosBackup:
                 )
                 logger.debug(f"Step 11: Unshared empty album {album_title}")
 
-        # Get a list of all the new albums made and its urls
-        new_shared_album_urls = [
-            assigned_album["album"]["shareInfo"]["shareableUrl"]
-            for assigned_album in assigned_albums.values()
-            if assigned_album["is_new_album"]
-        ]
-        return new_shared_album_urls
+        self.event_bus.emit(events.FINISHED_UPLOADING)
+        self.event_bus.emit(events.FINISHED_DELETING)
+
+        return GPhotosBackupResults(
+            new_albums=[
+                x["album"] for x in assigned_albums.values() if x["is_new_album"]
+            ]
+        )
 
     def __get_album_assignment_for_chunked_diffs(
-        self, shared_album_repository, chunked_new_diffs
+        self,
+        shared_album_repository: SharedAlbumRepository,
+        chunked_new_diffs: GroupedDiffs,
     ):
         results = {}
         space_remaining = [self.__get_remaining_storage(c) for c in self.gphoto_clients]
@@ -187,16 +247,18 @@ class GPhotosBackup:
 
         return results
 
-    def __get_new_storage_needed(self, diffs: DiffsWithMetadata):
+    def __get_new_storage_needed(self, diffs: list[DiffWithMetadata]) -> int:
         return sum([diff["file_size_in_bytes"] for diff in diffs])
 
-    def __get_remaining_storage(self, gphoto_client):
+    def __get_remaining_storage(self, gphoto_client: GPhotosClient) -> int:
         storage_quota = gphoto_client.get_storage_quota()
         max_limit = int(storage_quota["limit"])
         usage = int(storage_quota["usage"])
         return max_limit - usage
 
-    def __find_best_client_for_new_album(self, space_remaining, space_needed):
+    def __find_best_client_for_new_album(
+        self, space_remaining: int, space_needed: int
+    ) -> int:
         max_remaining_space = float("-inf")
         best_client_idx = None
 
@@ -215,7 +277,9 @@ class GPhotosBackup:
 
         return best_client_idx
 
-    def __add_uploaded_photos_safely(self, media_item_repository, upload_tokens):
+    def __add_uploaded_photos_safely(
+        self, media_item_repository: MediaItemRepository, upload_tokens: list[str]
+    ):
         MAX_UPLOAD_TOKEN_LENGTH_PER_CALL = 50
 
         for i in range(0, len(upload_tokens), MAX_UPLOAD_TOKEN_LENGTH_PER_CALL):

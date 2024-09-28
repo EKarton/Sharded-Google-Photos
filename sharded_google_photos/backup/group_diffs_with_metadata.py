@@ -1,10 +1,18 @@
-from .models import DiffWithMetadata, GroupedDiffs
+from .add_new_metadata import DiffWithMetadata
+
+type GroupedDiffs = map[str, map[str, DiffWithMetadata]]
 
 
 def group_diffs_with_metadata(diffs: list[DiffWithMetadata]) -> GroupedDiffs:
-    """Splits the diffs based on its album and the modifications to them.
-
+    """
+    Splits the diffs based on its album and the modifications to them.
     Refer to its test cases for its sample usages.
+
+    Args:
+        diffs (list[DiffWithMetadata]): A list of diffs with metadata.
+
+    Returns:
+        GroupedDiffs: A grouped set of diffs with metadata, grouped based on album and modifier.
     """
     result = {}
 

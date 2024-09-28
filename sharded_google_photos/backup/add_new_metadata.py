@@ -1,24 +1,38 @@
 import os
 import logging
-
-from .models import Diffs, Diff, DiffsWithMetadata
+from typing import TypedDict, NotRequired
 
 
 logger = logging.getLogger(__name__)
 
 
-def add_new_metadata(diffs: Diffs) -> DiffsWithMetadata:
+class Diff(TypedDict):
+    modifier: str
+    path: str
+    album_title: NotRequired[str]
+    file_name: NotRequired[str]
+    file_size_in_bytes: NotRequired[int]
+
+
+class DiffWithMetadata(TypedDict):
+    modifier: str
+    album_title: str
+    file_name: str
+    file_size_in_bytes: int
+    abs_path: str
+
+
+def add_new_metadata(diffs: list[Diff]) -> list[DiffWithMetadata]:
     """
-        Fetches and returns a new list of metadata from a list of metadata
+    Fetches and returns a new list of metadata from a list of metadata
 
     Args:
-        diffs:
-            Diffs, the original diffs.
+        diffs (list[Diff]): the original diffs.
 
     Returns:
-        DiffsWithMetadata, with new metadata fields.
+        list[DiffWithMetadata]: the original diffs, but with new metadata fields.
     """
-    new_diffs: DiffsWithMetadata = []
+    new_diffs: list[DiffWithMetadata] = []
     for diff in diffs:
         abs_path = os.path.abspath(diff["path"])
 

@@ -1,18 +1,24 @@
 import unittest
 from unittest.mock import patch
 
-from sharded_google_photos.backup.gphotos_backup import GPhotosBackup
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeGPhotosClient
 from sharded_google_photos.shared.testing.fake_gphotos_client import FakeItemsRepository
+from sharded_google_photos.shared.testing.fake_eventbus import FakeEventBus
+
+from sharded_google_photos.backup.gphotos_backup import GPhotosBackup
+from sharded_google_photos.backup import gphotos_backup_events as events
 
 
 class GPhotosBackupTests(unittest.TestCase):
-    def test_backup__new_photos_in_new_album__creates_new_shared_albums(self):
+    def test_backup__new_photos_in_new_album__creates_new_shared_albums_and_emitted_events_correctly(
+        self,
+    ):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
+        event_bus = FakeEventBus()
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -32,11 +38,11 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
                 },
             ]
-            backup_client = GPhotosBackup([client_1, client_2])
-            shared_album_uris = backup_client.backup(diffs)
+            backup_client = GPhotosBackup([client_1, client_2], event_bus)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -64,6 +70,22 @@ class GPhotosBackupTests(unittest.TestCase):
             )
             self.assertEqual(len(items_in_shared_albums_1), 3)
 
+            # Test assertions: Check the events emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 7)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 3)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_075900.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_190900.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_190901.jpeg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[6].name, events.FINISHED_DELETING)
+
     def test_backup__new_photos_in_new_album__puts_new_album_in_account_with_most_space(
         self,
     ):
@@ -72,7 +94,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -92,6 +115,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             # Act: Put in three more photos in a new album
             diffs = [
@@ -108,10 +132,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/At Toronto/20110720_213147.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -148,6 +172,22 @@ class GPhotosBackupTests(unittest.TestCase):
             )
             self.assertEqual(len(items_in_shared_albums_1), 3)
             self.assertEqual(len(items_in_shared_albums_2), 3)
+
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 7)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 3)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213057.jpg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213146.jpg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213147.jpg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[6].name, events.FINISHED_DELETING)
 
     def test_backup__new_photos_in_new_album_with_no_more_space__throws_error(
         self,
@@ -197,7 +237,7 @@ class GPhotosBackupTests(unittest.TestCase):
             ):
                 backup_client.backup(diffs)
 
-    def test_backup__create_multiple_albums_at_once__creates_albums_correctly(
+    def test_backup__create_multiple_albums_at_once__creates_albums_correctly_and_emits_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -205,7 +245,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -236,10 +277,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/At Toronto/20110720_213147.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 2)
+            self.assertEqual(len(backup_result.new_albums), 2)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -277,7 +318,29 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(items_in_shared_albums_1), 3)
             self.assertEqual(len(items_in_shared_albums_2), 3)
 
-    def test_backup__create_multiple_albums_2__creates_albums_correctly(
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 10)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 6)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_075900.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_190900.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_190901.jpeg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213057.jpg", emitted_events[5].args[0])
+            self.assertEqual(emitted_events[6].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213146.jpg", emitted_events[6].args[0])
+            self.assertEqual(emitted_events[7].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110720_213147.jpg", emitted_events[7].args[0])
+            self.assertEqual(emitted_events[8].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[9].name, events.FINISHED_DELETING)
+
+    def test_backup__create_multiple_albums_2__creates_albums_correctly_and_emit_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -285,7 +348,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=2)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -316,10 +380,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2012/At Toronto/6.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 3)
+            self.assertEqual(len(backup_result.new_albums), 3)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -362,7 +426,29 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(items_in_shared_albums_1b), 2)
             self.assertEqual(len(items_in_shared_albums_2), 2)
 
-    def test_backup__add_existing_photos_and_create_new_albums__creates_albums_correctly(
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 10)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 6)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("Trip to Chicago/1.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("Trip to Chicago/2.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("Trip to Toronto/3.jpeg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.UPLOADED_PHOTO)
+            self.assertIn("Trip to Toronto/4.jpeg", emitted_events[5].args[0])
+            self.assertEqual(emitted_events[6].name, events.UPLOADED_PHOTO)
+            self.assertIn("At Toronto/5.jpg", emitted_events[6].args[0])
+            self.assertEqual(emitted_events[7].name, events.UPLOADED_PHOTO)
+            self.assertIn("At Toronto/6.jpg", emitted_events[7].args[0])
+            self.assertEqual(emitted_events[8].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[9].name, events.FINISHED_DELETING)
+
+    def test_backup__add_existing_photos_and_create_new_albums__creates_albums_correctly_and_emitted_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -370,7 +456,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=2)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -391,10 +478,10 @@ class GPhotosBackupTests(unittest.TestCase):
                 {"modifier": "+", "path": "./A/1.jpg"},
                 {"modifier": "+", "path": "./A/2.jpg"},
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -432,7 +519,25 @@ class GPhotosBackupTests(unittest.TestCase):
             self.assertEqual(len(items_in_shared_albums_1), 4)
             self.assertEqual(len(items_in_shared_albums_2), 2)
 
-    def test_backup__add_photos_in_existing_album__puts_new_photos_in_existing_albums(
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 8)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 4)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("B/2.jpg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("B/3.jpg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("A/1.jpg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.UPLOADED_PHOTO)
+            self.assertIn("A/2.jpg", emitted_events[5].args[0])
+            self.assertEqual(emitted_events[6].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[7].name, events.FINISHED_DELETING)
+
+    def test_backup__add_photos_in_existing_album__puts_new_photos_in_existing_albums_and_emitted_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -440,7 +545,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -460,6 +566,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             # Act: Put in three more photos in the same album
             diffs = [
@@ -476,10 +583,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110903_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -509,6 +616,22 @@ class GPhotosBackupTests(unittest.TestCase):
                 shared_albums_1[0]["id"]
             )
             self.assertEqual(len(items_in_shared_albums_1), 6)
+
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 7)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 3)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 0)
+            self.assertEqual(emitted_events[2].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110903_075900.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110903_190900.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110903_190901.jpeg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[6].name, events.FINISHED_DELETING)
 
     def test_backup__new_photos_in_existing_album_with_no_more_space__throws_error(
         self,
@@ -559,7 +682,7 @@ class GPhotosBackupTests(unittest.TestCase):
             ):
                 backup_client.backup(diffs)
 
-    def test_backup__with_modified_file__removes_old_photo_from_album_and_adds_new_photo_in_album(
+    def test_backup__with_modified_file__removes_old_photo_from_album_and_adds_new_photo_in_album_and_emitted_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -567,7 +690,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -587,6 +711,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             diffs = [
                 {
@@ -598,10 +723,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190903.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -642,13 +767,30 @@ class GPhotosBackupTests(unittest.TestCase):
                 ),
             )
 
-    def test_backup__with_removed_file__removes_photo_from_album(self):
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 6)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 1)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 1)
+            self.assertEqual(emitted_events[2].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_190901.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.UPLOADED_PHOTO)
+            self.assertIn("20110902_190903.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[5].name, events.FINISHED_DELETING)
+
+    def test_backup__with_removed_file__removes_photo_from_album_and_emitted_events_correctly(
+        self,
+    ):
         repo = FakeItemsRepository()
         client_1 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -668,6 +810,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             diffs = [
                 {
@@ -679,10 +822,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -713,7 +856,21 @@ class GPhotosBackupTests(unittest.TestCase):
             )
             self.assertEqual(shared_albums_1_filenames, set(["20110902_075900.jpeg"]))
 
-    def test_backup__with_all_photos_removed_from_album__removes_all_photos_from_album_and_renames_album_with_trash_prefix(
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 6)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 0)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 2)
+            self.assertEqual(emitted_events[2].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_190900.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_190901.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[5].name, events.FINISHED_DELETING)
+
+    def test_backup__with_all_photos_removed_from_album__removes_all_photos_from_album_and_renames_album_with_trash_prefix_and_emitted_correct_events(
         self,
     ):
         repo = FakeItemsRepository()
@@ -721,7 +878,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -741,6 +899,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             diffs = [
                 {
@@ -756,10 +915,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -791,7 +950,23 @@ class GPhotosBackupTests(unittest.TestCase):
             )
             self.assertEqual(len(albums_1_items), 0)
 
-    def test_backup__removes_photo_not_in_album__does_nothing(
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 7)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 0)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 3)
+            self.assertEqual(emitted_events[2].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_075900.jpeg", emitted_events[2].args[0])
+            self.assertEqual(emitted_events[3].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_190900.jpeg", emitted_events[3].args[0])
+            self.assertEqual(emitted_events[4].name, events.DELETED_PHOTO)
+            self.assertIn("20110902_190901.jpeg", emitted_events[4].args[0])
+            self.assertEqual(emitted_events[5].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[6].name, events.FINISHED_DELETING)
+
+    def test_backup__removes_photo_not_in_album__does_nothing_and_emitted_events_correctly(
         self,
     ):
         repo = FakeItemsRepository()
@@ -799,7 +974,8 @@ class GPhotosBackupTests(unittest.TestCase):
         client_2 = FakeGPhotosClient(repository=repo, max_num_photos=10)
         client_1.authenticate()
         client_2.authenticate()
-        backup_client = GPhotosBackup([client_1, client_2])
+        event_bus = FakeEventBus()
+        backup_client = GPhotosBackup([client_1, client_2], event_bus)
 
         with patch("os.stat") as os_stat:
             os_stat.return_value.st_size = 1
@@ -819,6 +995,7 @@ class GPhotosBackupTests(unittest.TestCase):
                     },
                 ]
             )
+            event_bus.clear_events_emitted()
 
             diffs = [
                 {
@@ -826,10 +1003,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/unknown.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -870,3 +1047,13 @@ class GPhotosBackupTests(unittest.TestCase):
                     ]
                 ),
             )
+
+            # Test assertions: Check the events being emitted
+            emitted_events = event_bus.get_events_emitted()
+            self.assertEqual(len(emitted_events), 4)
+            self.assertEqual(emitted_events[0].name, events.STARTED_UPLOADING)
+            self.assertEqual(emitted_events[0].args[0], 0)
+            self.assertEqual(emitted_events[1].name, events.STARTED_DELETING)
+            self.assertEqual(emitted_events[1].args[0], 1)
+            self.assertEqual(emitted_events[2].name, events.FINISHED_UPLOADING)
+            self.assertEqual(emitted_events[3].name, events.FINISHED_DELETING)
