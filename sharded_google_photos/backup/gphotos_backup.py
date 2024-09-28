@@ -104,7 +104,8 @@ class GPhotosBackup:
             logger.debug(f"Step 5: Find the existing photos in {album_title}")
 
             # Remove the files to delete out of the album
-            media_ids_to_remove = set()
+            media_ids_to_remove = []
+            media_item_paths_removed = []
             for deletion_diff in grouped_diffs[album_title].get("-", []):
                 file_name = deletion_diff["file_name"]
 
@@ -112,13 +113,14 @@ class GPhotosBackup:
                     media_item = media_item_repository.get_media_item_from_file_name(
                         file_name
                     )
-                    media_ids_to_remove.add(media_item["id"])
+                    media_ids_to_remove.append(media_item["id"])
+                    media_item_paths_removed.append(deletion_diff["abs_path"])
 
-            media_item_repository.remove_media_items(list(media_ids_to_remove))
+            media_item_repository.remove_media_items(media_ids_to_remove)
 
             # Emit the photos we deleted
-            for deletion_diff in grouped_diffs[album_title].get("-", []):
-                self.event_bus.emit(events.DELETED_PHOTO, deletion_diff["abs_path"])
+            for removed_media_item_path in media_item_paths_removed:
+                self.event_bus.emit(events.DELETED_PHOTO, removed_media_item_path)
 
             logger.debug(
                 f"Step 6: Removing {len(media_ids_to_remove)} photos from {album_title}"
