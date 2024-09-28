@@ -33,10 +33,10 @@ class GPhotosBackupTests(unittest.TestCase):
                 },
             ]
             backup_client = GPhotosBackup([client_1, client_2])
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -108,10 +108,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/At Toronto/20110720_213147.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -236,10 +236,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/At Toronto/20110720_213147.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 2)
+            self.assertEqual(len(backup_result.new_albums), 2)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -316,10 +316,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2012/At Toronto/6.jpg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 3)
+            self.assertEqual(len(backup_result.new_albums), 3)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -391,10 +391,10 @@ class GPhotosBackupTests(unittest.TestCase):
                 {"modifier": "+", "path": "./A/1.jpg"},
                 {"modifier": "+", "path": "./A/2.jpg"},
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 1)
+            self.assertEqual(len(backup_result.new_albums), 1)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -476,10 +476,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110903_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -598,10 +598,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190903.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -679,10 +679,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -756,10 +756,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/20110902_190901.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()
@@ -826,10 +826,10 @@ class GPhotosBackupTests(unittest.TestCase):
                     "path": "./Photos/2011/Trip to Chicago/unknown.jpeg",
                 },
             ]
-            shared_album_uris = backup_client.backup(diffs)
+            backup_result = backup_client.backup(diffs)
 
             # Test assertions: Check the output of newly created shared albums
-            self.assertEqual(len(shared_album_uris), 0)
+            self.assertEqual(len(backup_result.new_albums), 0)
 
             # Test assertions: Check shared albums
             shared_albums_1 = client_1.albums().list_shared_albums()

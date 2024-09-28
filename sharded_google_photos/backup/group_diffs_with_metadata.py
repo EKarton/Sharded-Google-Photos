@@ -1,4 +1,6 @@
-from .models import DiffWithMetadata, GroupedDiffs
+from .add_new_metadata import DiffWithMetadata
+
+type GroupedDiffs = map[str, map[str, DiffWithMetadata]]
 
 
 def group_diffs_with_metadata(diffs: list[DiffWithMetadata]) -> GroupedDiffs:
