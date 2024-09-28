@@ -76,7 +76,7 @@ class GPhotosClient:
         logger.debug(f"Obtained saved credentials from {self.creds_file}")
         return Credentials(**fileData)
 
-    def __save_credentials__(self, credentials):
+    def __save_credentials__(self, credentials: Credentials):
         fileData = {
             "refresh_token": credentials.refresh_token,
             "token": credentials.token,
