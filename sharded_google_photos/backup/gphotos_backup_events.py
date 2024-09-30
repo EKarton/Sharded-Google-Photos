@@ -8,4 +8,4 @@ FINISHED_UPLOADING = "backup:finished_uploading"
 
 STARTED_DELETING = "backup:started_deleting"
 DELETED_PHOTO = "backup:deleted_photo"
-FINISHED_DELETING = "backup:started_deleting"
+FINISHED_DELETING = "backup:finished_deleting"
